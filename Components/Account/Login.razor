@@ -1,0 +1,15 @@
+@page "/account/login"
+
+<h1>Login</h1>
+<form method="post" action="/api/account/login">
+    <input name="email" type="email" class="form-control" placeholder="name@example.com" required />
+    <input name="password" type="password" class="form-control" placeholder="password" required />
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Login</button>
+</form>
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+@code {
+    private string? statusMessage;
+}

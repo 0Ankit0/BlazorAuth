@@ -1,0 +1,45 @@
+@page "/account/loginwithrecoverycode"
+@using System.ComponentModel.DataAnnotations
+@inject SignInManager<IdentityUser> SignInManager
+@inject NavigationManager NavigationManager
+
+<h1>Login with Recovery Code</h1>
+<EditForm Model="recoveryModel" OnValidSubmit="HandleRecoveryLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <InputText @bind-Value="recoveryModel.RecoveryCode" class="form-control" placeholder="Recovery code" />
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Verify</button>
+</EditForm>
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+
+@code {
+    private RecoveryModel recoveryModel = new RecoveryModel();
+    private string? statusMessage;
+
+    private async Task HandleRecoveryLogin()
+    {
+        statusMessage = string.Empty;
+        if (string.IsNullOrWhiteSpace(recoveryModel.RecoveryCode))
+        {
+            statusMessage = "Recovery code is required.";
+            return;
+        }
+        var result = await SignInManager.TwoFactorRecoveryCodeSignInAsync(recoveryModel.RecoveryCode);
+        if (result.Succeeded)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            statusMessage = "Invalid recovery code.";
+        }
+    }
+    public class RecoveryModel
+    {
+        [Required]
+        public string? RecoveryCode { get; set; }
+    }
+}

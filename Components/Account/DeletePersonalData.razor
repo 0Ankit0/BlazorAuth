@@ -1,0 +1,44 @@
+@page "/account/deletepersonaldata"
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components.Authorization
+
+<h1>Delete Personal Data</h1>
+<p>Are you sure you want to delete your personal data? This action cannot be undone.</p>
+<button class="btn btn-danger" @onclick="DeletePersonalDataHandler">Delete</button>
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private string? statusMessage;
+
+    private async Task DeletePersonalDataHandler()
+    {
+        if (authenticationStateTask == null)
+        {
+            statusMessage = "Invalid state.";
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "User not found.";
+            return;
+        }
+        var result = await UserManager.DeleteAsync(user);
+        if (result.Succeeded)
+        {
+            statusMessage = "Personal data deleted.";
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+        }
+    }
+}

@@ -1,0 +1,34 @@
+@page "/account/downloadpersonaldata"
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
+@using Microsoft.AspNetCore.Components.Authorization
+
+<h1>Download Personal Data</h1>
+<button class="btn btn-primary" @onclick="DownloadData">Download</button>
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private string? statusMessage;
+
+    private async Task DownloadData()
+    {
+        if (authenticationStateTask == null)
+        {
+            statusMessage = "Invalid state.";
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "User not found.";
+            return;
+        }
+        // Here you would gather and return the user's data as a file
+        statusMessage = "Personal data download (mock).";
+    }
+}

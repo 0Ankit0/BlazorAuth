@@ -1,0 +1,57 @@
+@page "/account/email"
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<IdentityUser> UserManager
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components.Authorization
+
+<h1>Change Email</h1>
+<EditForm Model="emailModel" OnValidSubmit="HandleChangeEmail">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <InputText @bind-Value="emailModel.NewEmail" class="form-control" placeholder="New email" />
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Change Email</button>
+</EditForm>
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private EmailModel emailModel = new EmailModel();
+    private string? statusMessage;
+
+    private async Task HandleChangeEmail()
+    {
+        statusMessage = string.Empty;
+        if (authenticationStateTask == null || string.IsNullOrEmpty(emailModel.NewEmail))
+        {
+            statusMessage = "Invalid state or email.";
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "User not found.";
+            return;
+        }
+        var token = await UserManager.GenerateChangeEmailTokenAsync(user, emailModel.NewEmail);
+        var result = await UserManager.ChangeEmailAsync(user, emailModel.NewEmail, token);
+        if (result.Succeeded)
+        {
+            statusMessage = "Email changed successfully.";
+        }
+        else
+        {
+            statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+        }
+    }
+    public class EmailModel
+    {
+        [Required]
+        [EmailAddress]
+        public string? NewEmail { get; set; }
+    }
+}

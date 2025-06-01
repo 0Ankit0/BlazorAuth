@@ -1,0 +1,45 @@
+@page "/account/loginwith2fa"
+@using System.ComponentModel.DataAnnotations
+@inject SignInManager<IdentityUser> SignInManager
+@inject NavigationManager NavigationManager
+
+<h1>Two-Factor Authentication</h1>
+<EditForm Model="twoFactorModel" OnValidSubmit="Handle2faLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <InputText @bind-Value="twoFactorModel.TwoFactorCode" class="form-control" placeholder="Authenticator code" />
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Verify</button>
+</EditForm>
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+
+@code {
+    private TwoFactorModel twoFactorModel = new TwoFactorModel();
+    private string? statusMessage;
+
+    private async Task Handle2faLogin()
+    {
+        statusMessage = string.Empty;
+        if (string.IsNullOrWhiteSpace(twoFactorModel.TwoFactorCode))
+        {
+            statusMessage = "Authenticator code is required.";
+            return;
+        }
+        var result = await SignInManager.TwoFactorAuthenticatorSignInAsync(twoFactorModel.TwoFactorCode, false, false);
+        if (result.Succeeded)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            statusMessage = "Invalid authenticator code.";
+        }
+    }
+    public class TwoFactorModel
+    {
+        [Required]
+        public string? TwoFactorCode { get; set; }
+    }
+}

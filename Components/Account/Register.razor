@@ -1,0 +1,56 @@
+@page "/account/register"
+@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<IdentityUser> SignInManager
+@inject NavigationManager NavigationManager
+
+<h1>Register</h1>
+<EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <InputText @bind-Value="registerModel.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
+    <InputText @bind-Value="registerModel.Password" class="form-control" type="password" placeholder="password" />
+    <InputText @bind-Value="registerModel.ConfirmPassword" class="form-control" type="password" placeholder="confirm password" />
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+</EditForm>
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+
+@code {
+    private RegisterModel registerModel = new RegisterModel();
+    private string statusMessage;
+
+    private async Task HandleRegister()
+    {
+        statusMessage = string.Empty;
+        if (registerModel.Password != registerModel.ConfirmPassword)
+        {
+            statusMessage = "Passwords do not match.";
+            return;
+        }
+        var user = new IdentityUser { UserName = registerModel.Email, Email = registerModel.Email };
+        var result = await UserManager.CreateAsync(user, registerModel.Password);
+        if (result.Succeeded)
+        {
+            await SignInManager.SignInAsync(user, isPersistent: false);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+        }
+    }
+    public class RegisterModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
+        [Required]
+        [MinLength(6)]
+        public string Password { get; set; }
+        [Required]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; }
+    }
+}

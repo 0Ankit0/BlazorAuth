@@ -1,0 +1,49 @@
+@page "/account/resendemailconfirmation"  
+@using Microsoft.AspNetCore.Identity  
+@using System.ComponentModel.DataAnnotations  
+@using Microsoft.Extensions.DependencyInjection  
+@inject UserManager<IdentityUser> UserManager  
+@inject IEmailSender<IdentityUser> EmailSender  
+
+<h1>Resend email confirmation</h1>  
+<h2>Enter your email.</h2>  
+<hr />  
+<EditForm Model="emailModel" OnValidSubmit="HandleResend">  
+    <DataAnnotationsValidator />  
+    <ValidationSummary />  
+    <InputText @bind-Value="emailModel.Email" class="form-control" placeholder="name@example.com" />  
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>  
+</EditForm>  
+@if (!string.IsNullOrEmpty(statusMessage))  
+{  
+    <div class="alert alert-info mt-2">@statusMessage</div>  
+}  
+
+@code {  
+    private EmailModel emailModel = new EmailModel();  
+    private string statusMessage;  
+
+    private async Task HandleResend()  
+    {  
+        statusMessage = string.Empty;  
+        var user = await UserManager.FindByEmailAsync(emailModel.Email);  
+        if (user == null)  
+        {  
+            statusMessage = "User not found.";  
+            return;  
+        }  
+        var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);  
+        var confirmationLink = $"https://yourapp.com/account/confirmemail?userId={user.Id}&token={token}";  
+        var emailMessage = $"Please confirm your account by clicking this link: <a href='{confirmationLink}'>link</a>";  
+
+        await EmailSender.SendConfirmationLinkAsync(user,emailModel.Email, emailMessage);  
+        statusMessage = "Confirmation email sent.";  
+    }  
+
+    public class EmailModel  
+    {  
+        [Required]  
+        [EmailAddress]  
+        public string? Email { get; set; }  
+    }  
+}

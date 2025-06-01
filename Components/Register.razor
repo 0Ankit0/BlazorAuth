@@ -1,0 +1,36 @@
+@page "/register"
+@inject NavigationManager NavigationManager
+
+<h1>Register</h1>
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+            <h2>Create a new account.</h2>
+            <hr />
+            <ValidationSummary />
+            <InputText @bind-Value="registerModel.Email" class="form-control" placeholder="name@example.com" />
+            <InputText @bind-Value="registerModel.Password" class="form-control" type="password"
+                placeholder="password" />
+            <InputText @bind-Value="registerModel.ConfirmPassword" class="form-control" type="password"
+                placeholder="confirm password" />
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private RegisterModel registerModel = new RegisterModel();
+    private async Task HandleRegister()
+    {
+        // Registration logic here
+    }
+    public class RegisterModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string ConfirmPassword { get; set; }
+    }
+}
+
+               
+               
