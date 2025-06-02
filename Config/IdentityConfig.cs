@@ -1,6 +1,7 @@
 ﻿using BlazorAuth.Data;
 using BlazorAuth.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlazorAuth.Config;
@@ -18,6 +19,7 @@ public static class IdentityConfig
            .AddEntityFrameworkStores<AuthDbContext>()
            .AddDefaultTokenProviders();
 
-        services.AddScoped<IEmailSender<IdentityUser>, EmailSender>();
+        services.AddScoped<IEmailSender<IdentityUser>, IdentityEmailSender>(); //for identity-specific email sending
+        services.AddScoped<IEmailSender, GeneralEmailSender>(); //for general email sending
     }
 }

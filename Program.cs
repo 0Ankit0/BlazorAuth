@@ -17,6 +17,7 @@ builder.Services.AddIdentityAndDb(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
+builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
@@ -32,6 +33,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.MapRazorPages();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
