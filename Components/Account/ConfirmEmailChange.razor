@@ -1,0 +1,73 @@
+@page "/account/confirmemailchange"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Text
+@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<IdentityUser> SignInManager
+@inject NavigationManager NavigationManager
+
+<h1>Confirm email change</h1>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info">@statusMessage</div>
+}
+
+@code {
+    private string? statusMessage;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (!query.TryGetValue("userId", out var userId) ||
+            !query.TryGetValue("email", out var email) ||
+            !query.TryGetValue("code", out var code))
+        {
+            NavigationManager.NavigateTo("/", forceLoad: true);
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(userId!);
+        if (user == null)
+        {
+            statusMessage = $"Unable to load user with ID '{userId}'.";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code!));
+            var result = await UserManager.ChangeEmailAsync(user, email!, decodedCode);
+            if (!result.Succeeded)
+            {
+                statusMessage = "Error changing email.";
+                isLoading = false;
+                return;
+            }
+
+            // In this UI, email and username are the same, so update username as well
+            var setUserNameResult = await UserManager.SetUserNameAsync(user, email!);
+            if (!setUserNameResult.Succeeded)
+            {
+                statusMessage = "Error changing user name.";
+                isLoading = false;
+                return;
+            }
+
+            await SignInManager.RefreshSignInAsync(user);
+            statusMessage = "Thank you for confirming your email change.";
+        }
+        catch
+        {
+            statusMessage = "Invalid confirmation link.";
+        }
+        isLoading = false;
+    }
+}
