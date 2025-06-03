@@ -1,12 +1,32 @@
 @page "/account/deletepersonaldata"
 @using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
 @inject UserManager<IdentityUser> UserManager
+@inject SignInManager<IdentityUser> SignInManager
 @inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.Components.Authorization
 
 <h1>Delete Personal Data</h1>
-<p>Are you sure you want to delete your personal data? This action cannot be undone.</p>
-<button class="btn btn-danger" @onclick="DeletePersonalDataHandler">Delete</button>
+
+<div class="alert alert-warning" role="alert">
+    <p>
+        <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
+    </p>
+</div>
+
+<EditForm Model="inputModel" OnValidSubmit="DeletePersonalDataHandler">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    @if (requirePassword)
+    {
+        <div class="form-floating mb-3">
+            <InputText @bind-Value="inputModel.Password" class="form-control" type="password" autocomplete="current-password" placeholder="Please enter your password." />
+            <label>Password</label>
+        </div>
+    }
+    <button class="w-100 btn btn-lg btn-danger" type="submit">Delete data and close my account</button>
+</EditForm>
+
 @if (!string.IsNullOrEmpty(statusMessage))
 {
     <div class="alert alert-info mt-2">@statusMessage</div>
@@ -14,9 +34,11 @@
 
 @code {
     [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private InputModel inputModel = new();
     private string? statusMessage;
+    private bool requirePassword;
 
-    private async Task DeletePersonalDataHandler()
+    protected override async Task OnInitializedAsync()
     {
         if (authenticationStateTask == null)
         {
@@ -27,18 +49,55 @@
         var user = await UserManager.GetUserAsync(authState.User);
         if (user == null)
         {
-            statusMessage = "User not found.";
+            statusMessage = "Unable to load user.";
             return;
         }
+        requirePassword = await UserManager.HasPasswordAsync(user);
+    }
+
+    private async Task DeletePersonalDataHandler()
+    {
+        statusMessage = string.Empty;
+
+        if (authenticationStateTask == null)
+        {
+            statusMessage = "Invalid state.";
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "Unable to load user.";
+            return;
+        }
+
+        requirePassword = await UserManager.HasPasswordAsync(user);
+        if (requirePassword)
+        {
+            if (string.IsNullOrWhiteSpace(inputModel.Password) || !await UserManager.CheckPasswordAsync(user, inputModel.Password))
+            {
+                statusMessage = "Incorrect password.";
+                return;
+            }
+        }
+
         var result = await UserManager.DeleteAsync(user);
-        if (result.Succeeded)
+        if (!result.Succeeded)
         {
-            statusMessage = "Personal data deleted.";
-            NavigationManager.NavigateTo("/");
+            statusMessage = "Unexpected error occurred deleting user: " + string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
         }
-        else
-        {
-            statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
-        }
+
+        await SignInManager.SignOutAsync();
+        statusMessage = "Your personal data has been deleted.";
+        NavigationManager.NavigateTo("/", true);
+    }
+
+    public class InputModel
+    {
+        [Required(ErrorMessage = "Password is required.")]
+        [DataType(DataType.Password)]
+        public string? Password { get; set; }
     }
 }
