@@ -1,56 +1,165 @@
 @page "/account/register"
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity.UI.Services
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.WebUtilities
 @inject UserManager<IdentityUser> UserManager
 @inject SignInManager<IdentityUser> SignInManager
 @inject NavigationManager NavigationManager
-
-<h1>Register</h1>
-<EditForm Model="registerModel" OnValidSubmit="HandleRegister">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    <InputText @bind-Value="registerModel.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
-    <InputText @bind-Value="registerModel.Password" class="form-control" type="password" placeholder="password" />
-    <InputText @bind-Value="registerModel.ConfirmPassword" class="form-control" type="password" placeholder="confirm password" />
-    <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-</EditForm>
-@if (!string.IsNullOrEmpty(statusMessage))
-{
-    <div class="alert alert-info mt-2">@statusMessage</div>
-}
+@inject ILogger<Register> Logger
+@inject IEmailSender EmailSender
+@inject IServiceProvider ServiceProvider
 
 @code {
-    private RegisterModel registerModel = new RegisterModel();
-    private string statusMessage;
+    private RegisterModel registerModel = new();
+    private string? statusMessage;
+    private string? returnUrl;
+    private IList<AuthenticationScheme> externalLogins = new List<AuthenticationScheme>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Parse returnUrl from query string if present
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("returnUrl", out var returnUrlValue))
+        {
+            returnUrl = returnUrlValue;
+        }
+        else
+        {
+            returnUrl = "/";
+        }
+
+        externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+    }
 
     private async Task HandleRegister()
     {
         statusMessage = string.Empty;
-        if (registerModel.Password != registerModel.ConfirmPassword)
+
+        var context = new ValidationContext(registerModel);
+        var results = new List<ValidationResult>();
+        if (!Validator.TryValidateObject(registerModel, context, results, true))
         {
-            statusMessage = "Passwords do not match.";
+            statusMessage = string.Join(" ", results.Select(r => r.ErrorMessage));
             return;
         }
+
         var user = new IdentityUser { UserName = registerModel.Email, Email = registerModel.Email };
         var result = await UserManager.CreateAsync(user, registerModel.Password);
+
         if (result.Succeeded)
         {
-            await SignInManager.SignInAsync(user, isPersistent: false);
-            NavigationManager.NavigateTo("/");
+            Logger.LogInformation("User created a new account with password.");
+
+            var userId = await UserManager.GetUserIdAsync(user);
+            var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            var callbackUrl = NavigationManager.BaseUri.TrimEnd('/') +
+                $"/Identity/Account/ConfirmEmail?userId={Uri.EscapeDataString(userId)}&code={Uri.EscapeDataString(code)}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
+
+            await EmailSender.SendEmailAsync(registerModel.Email, "Confirm your email",
+                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+            if (UserManager.Options.SignIn.RequireConfirmedAccount)
+            {
+                NavigationManager.NavigateTo($"/Identity/Account/RegisterConfirmation?email={Uri.EscapeDataString(registerModel.Email)}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
+                return;
+            }
+            else
+            {
+                await SignInManager.SignInAsync(user, isPersistent: false);
+                NavigationManager.NavigateTo(returnUrl ?? "/");
+                return;
+            }
         }
-        else
-        {
-            statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
-        }
+        statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
     }
+
+    private async Task ExternalLogin(string provider)
+    {
+        // Redirect to external login page
+        var url = $"/Identity/Account/ExternalLogin?provider={Uri.EscapeDataString(provider)}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
+        NavigationManager.NavigateTo(url, forceLoad: true);
+    }
+
     public class RegisterModel
     {
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        [Display(Name = "Email")]
+        public string Email { get; set; } = string.Empty;
+
         [Required]
-        [MinLength(6)]
-        public string Password { get; set; }
-        [Required]
-        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
-        public string ConfirmPassword { get; set; }
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }
+
+<h1>Register</h1>
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="registerModel.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label>Email</label>
+                <ValidationMessage For="@(() => registerModel.Email)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="registerModel.Password" class="form-control" type="password" autocomplete="new-password" aria-required="true" placeholder="password" />
+                <label>Password</label>
+                <ValidationMessage For="@(() => registerModel.Password)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="registerModel.ConfirmPassword" class="form-control" type="password" autocomplete="new-password" aria-required="true" placeholder="confirm password" />
+                <label>Confirm Password</label>
+                <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+        </EditForm>
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert alert-info mt-2">@statusMessage</div>
+        }
+    </div>
+    <div class="col-md-6 col-md-offset-2">
+        <section>
+            <h3>Use another service to register.</h3>
+            <hr />
+            @if (externalLogins.Count == 0)
+            {
+                <div>
+                    <p>
+                        There are no external authentication services configured. See this
+                        <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article about setting up this ASP.NET application to support logging in via external services</a>.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div>
+                    <p>
+                        @foreach (var provider in externalLogins)
+                        {
+                            <button type="button" class="btn btn-primary me-2" @onclick="() => ExternalLogin(provider.Name)">
+                                Log in using your @provider.DisplayName account
+                            </button>
+                        }
+                    </p>
+                </div>
+            }
+        </section>
+    </div>
+</div>

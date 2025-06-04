@@ -1,49 +1,75 @@
-@page "/account/resendemailconfirmation"  
-@using Microsoft.AspNetCore.Identity  
-@using System.ComponentModel.DataAnnotations  
-@using Microsoft.Extensions.DependencyInjection  
-@inject UserManager<IdentityUser> UserManager  
-@inject IEmailSender<IdentityUser> EmailSender  
+@page "/account/resendemailconfirmation"
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.AspNetCore.Identity.UI.Services
+@inject UserManager<IdentityUser> UserManager
+@inject IEmailSender EmailSender
+@inject NavigationManager NavigationManager
 
-<h1>Resend email confirmation</h1>  
-<h2>Enter your email.</h2>  
-<hr />  
-<EditForm Model="emailModel" OnValidSubmit="HandleResend">  
-    <DataAnnotationsValidator />  
-    <ValidationSummary />  
-    <InputText @bind-Value="emailModel.Email" class="form-control" placeholder="name@example.com" />  
-    <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>  
-</EditForm>  
-@if (!string.IsNullOrEmpty(statusMessage))  
-{  
-    <div class="alert alert-info mt-2">@statusMessage</div>  
-}  
+<h1>Resend email confirmation</h1>
+<h2>Enter your email.</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="inputModel" OnValidSubmit="HandleResend">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="inputModel.Email" class="form-control" aria-required="true" placeholder="name@example.com" />
+                <label class="form-label">Email</label>
+                <ValidationMessage For="@(() => inputModel.Email)" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>
+        </EditForm>
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert alert-info mt-2">@statusMessage</div>
+        }
+    </div>
+</div>
 
-@code {  
-    private EmailModel emailModel = new EmailModel();  
-    private string statusMessage;  
+@code {
+    private InputModel inputModel = new();
+    private string? statusMessage;
 
-    private async Task HandleResend()  
-    {  
-        statusMessage = string.Empty;  
-        var user = await UserManager.FindByEmailAsync(emailModel.Email);  
-        if (user == null)  
-        {  
-            statusMessage = "User not found.";  
-            return;  
-        }  
-        var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);  
-        var confirmationLink = $"https://yourapp.com/account/confirmemail?userId={user.Id}&token={token}";  
-        var emailMessage = $"Please confirm your account by clicking this link: <a href='{confirmationLink}'>link</a>";  
+    public class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+    }
 
-        await EmailSender.SendConfirmationLinkAsync(user,emailModel.Email, emailMessage);  
-        statusMessage = "Confirmation email sent.";  
-    }  
+    private async Task HandleResend()
+    {
+        statusMessage = string.Empty;
 
-    public class EmailModel  
-    {  
-        [Required]  
-        [EmailAddress]  
-        public string? Email { get; set; }  
-    }  
+        if (string.IsNullOrWhiteSpace(inputModel.Email))
+        {
+            statusMessage = "Please enter a valid email address.";
+            return;
+        }
+
+        var user = await UserManager.FindByEmailAsync(inputModel.Email);
+        // Always show the same message to avoid account enumeration
+        statusMessage = "Verification email sent. Please check your email.";
+
+        if (user == null)
+        {
+            return;
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.BaseUri.TrimEnd('/') +
+            $"/Identity/Account/ConfirmEmail?userId={Uri.EscapeDataString(userId)}&code={Uri.EscapeDataString(code)}";
+
+        await EmailSender.SendEmailAsync(
+            inputModel.Email,
+            "Confirm your email",
+            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+    }
 }
