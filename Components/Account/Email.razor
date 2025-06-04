@@ -1,33 +1,82 @@
-@page "/account/email"
+﻿@page "/account/email"
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity.UI.Services
 @using System.ComponentModel.DataAnnotations
-@inject UserManager<IdentityUser> UserManager
-@inject NavigationManager NavigationManager
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.WebUtilities
 @using Microsoft.AspNetCore.Components.Authorization
+@inject UserManager<IdentityUser> UserManager
+@inject IEmailSender EmailSender
+@inject NavigationManager NavigationManager
 
-<h1>Change Email</h1>
-<EditForm Model="emailModel" OnValidSubmit="HandleChangeEmail">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    <InputText @bind-Value="emailModel.NewEmail" class="form-control" placeholder="New email" />
-    <button type="submit" class="w-100 btn btn-lg btn-primary">Change Email</button>
-</EditForm>
-@if (!string.IsNullOrEmpty(statusMessage))
+<h1>Manage Email</h1>
+@if (isLoaded)
 {
-    <div class="alert alert-info mt-2">@statusMessage</div>
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="inputModel" OnValidSubmit="HandleChangeEmail">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                @if (isEmailConfirmed)
+                {
+                    <div class="form-floating mb-3 input-group">
+                        <InputText @bind-Value="currentEmail" class="form-control" disabled />
+                        <div class="input-group-append">
+                            <span class="h-100 input-group-text text-success font-weight-bold">✓</span>
+                        </div>
+                        <label class="form-label">Email</label>
+                    </div>
+                }
+                else
+                {
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="currentEmail" class="form-control" disabled />
+                        <label class="form-label">Email</label>
+                        <button type="button" class="btn btn-link" @onclick="SendVerificationEmail">Send verification email</button>
+                    </div>
+                }
+
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="inputModel.NewEmail" class="form-control" autocomplete="email" aria-required="true" placeholder="Please enter new email." />
+                    <label class="form-label">New email</label>
+                    <ValidationMessage For="@(() => inputModel.NewEmail)" />
+                </div>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Change email</button>
+            </EditForm>
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="alert alert-info mt-2">@statusMessage</div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <p>Loading...</p>
 }
 
 @code {
     [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
-    private EmailModel emailModel = new EmailModel();
-    private string? statusMessage;
 
-    private async Task HandleChangeEmail()
+    private string currentEmail = string.Empty;
+    private bool isEmailConfirmed;
+    private string? statusMessage;
+    private bool isLoaded = false;
+
+    private InputModel inputModel = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        statusMessage = string.Empty;
-        if (authenticationStateTask == null || string.IsNullOrEmpty(emailModel.NewEmail))
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (authenticationStateTask == null)
         {
-            statusMessage = "Invalid state or email.";
+            statusMessage = "Invalid state.";
             return;
         }
         var authState = await authenticationStateTask;
@@ -37,21 +86,85 @@
             statusMessage = "User not found.";
             return;
         }
-        var token = await UserManager.GenerateChangeEmailTokenAsync(user, emailModel.NewEmail);
-        var result = await UserManager.ChangeEmailAsync(user, emailModel.NewEmail, token);
-        if (result.Succeeded)
+        currentEmail = await UserManager.GetEmailAsync(user);
+        inputModel.NewEmail = currentEmail;
+        isEmailConfirmed = await UserManager.IsEmailConfirmedAsync(user);
+        isLoaded = true;
+    }
+
+    private async Task HandleChangeEmail()
+    {
+        statusMessage = string.Empty;
+        if (authenticationStateTask == null)
         {
-            statusMessage = "Email changed successfully.";
+            statusMessage = "Invalid state.";
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "User not found.";
+            return;
+        }
+
+        var email = await UserManager.GetEmailAsync(user);
+        if (inputModel.NewEmail != email)
+        {
+            var userId = await UserManager.GetUserIdAsync(user);
+            var code = await UserManager.GenerateChangeEmailTokenAsync(user, inputModel.NewEmail);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            var callbackUrl = NavigationManager.BaseUri.TrimEnd('/') +
+                $"/Identity/Account/ConfirmEmailChange?userId={Uri.EscapeDataString(userId)}&email={Uri.EscapeDataString(inputModel.NewEmail)}&code={Uri.EscapeDataString(code)}";
+            await EmailSender.SendEmailAsync(
+                inputModel.NewEmail,
+                "Confirm your email",
+                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+            statusMessage = "Confirmation link to change email sent. Please check your email.";
         }
         else
         {
-            statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+            statusMessage = "Your email is unchanged.";
         }
+        await LoadAsync();
     }
-    public class EmailModel
+
+    private async Task SendVerificationEmail()
+    {
+        statusMessage = string.Empty;
+        if (authenticationStateTask == null)
+        {
+            statusMessage = "Invalid state.";
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "User not found.";
+            return;
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var email = await UserManager.GetEmailAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.BaseUri.TrimEnd('/') +
+            $"/account/confirmEmail?userId={Uri.EscapeDataString(userId)}&code={Uri.EscapeDataString(code)}";
+        await EmailSender.SendEmailAsync(
+            email!,
+            "Confirm your email",
+            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+        statusMessage = "Verification email sent. Please check your email.";
+    }
+
+    public class InputModel
     {
         [Required]
         [EmailAddress]
-        public string? NewEmail { get; set; }
+        [Display(Name = "New email")]
+        public string NewEmail { get; set; } = string.Empty;
     }
 }
