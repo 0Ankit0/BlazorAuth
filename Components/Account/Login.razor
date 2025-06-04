@@ -1,9 +1,25 @@
 @page "/account/login"
+@using Microsoft.AspNetCore.Components.Forms
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager NavigationManager
 
 <h1>Login</h1>
-<form method="post" action="/api/account/login">
-    <input name="email" type="email" class="form-control" placeholder="name@example.com" required />
-    <input name="password" type="password" class="form-control" placeholder="password" required />
+<form method="post" action="/api/account/login" name="loginForm">
+    <div class="form-floating mb-3">
+        <input name="Email" type="email" class="form-control" autocomplete="username" placeholder="name@example.com"
+            required />
+        <label class="form-label">Email</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input name="Password" type="password" class="form-control" autocomplete="current-password"
+            placeholder="Password" required />
+        <label class="form-label">Password</label>
+    </div>
+    <div class="form-check mb-3">
+        <input name="rememberMe" type="checkbox" class="form-check-input" value="true" />
+        <label class="form-check-label">Remember me?</label>
+    </div>
     <button type="submit" class="w-100 btn btn-lg btn-primary">Login</button>
 </form>
 @if (!string.IsNullOrEmpty(statusMessage))
@@ -12,4 +28,15 @@
 }
 @code {
     private string? statusMessage;
+
+    protected override void OnInitialized()
+    {
+        // Optionally, read status message from query string if redirected back after login failure
+        var uri = new Uri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("error", out var msg))
+        {
+            statusMessage = msg;
+        }
+    }
 }
