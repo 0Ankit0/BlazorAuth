@@ -1,8 +1,148 @@
 @page "/account/twofactorauthentication"
 @using Microsoft.AspNetCore.Identity
-@inject UserManager<IdentityUser> UserManager
 @using Microsoft.AspNetCore.Components.Authorization
+@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<IdentityUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject ILogger<TwoFactorAuthentication> Logger
 
-<h1>Two-Factor Authentication</h1>
-<p>Two-factor authentication management coming soon.</p>
-@* You can add logic for enabling/disabling 2FA here using UserManager and SignInManager. *@
+<h1>Two-factor authentication (2FA)</h1>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info">@statusMessage</div>
+}
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (loadError != null)
+{
+    <div class="alert alert-danger">@loadError</div>
+}
+else
+{
+    @if (is2faEnabled)
+    {
+        @if (recoveryCodesLeft == 0)
+        {
+            <div class="alert alert-danger">
+                <strong>You have no recovery codes left.</strong>
+                <p>You must <a href="/account/generaterecoverycodes">generate a new set of recovery codes</a> before you can log in with a recovery code.</p>
+            </div>
+        }
+        else if (recoveryCodesLeft == 1)
+        {
+            <div class="alert alert-danger">
+                <strong>You have 1 recovery code left.</strong>
+                <p>You can <a href="/account/generaterecoverycodes">generate a new set of recovery codes</a>.</p>
+            </div>
+        }
+        else if (recoveryCodesLeft <= 3)
+        {
+            <div class="alert alert-warning">
+                <strong>You have @recoveryCodesLeft recovery codes left.</strong>
+                <p>You should <a href="/account/generaterecoverycodes">generate a new set of recovery codes</a>.</p>
+            </div>
+        }
+
+        @if (isMachineRemembered)
+        {
+            <button class="btn btn-primary me-2" @onclick="ForgetBrowser" disabled="@isProcessing">Forget this browser</button>
+        }
+        <a href="/account/disable2fa" class="btn btn-primary me-2">Disable 2FA</a>
+        <a href="/account/generaterecoverycodes" class="btn btn-primary me-2">Reset recovery codes</a>
+    }
+
+    <h4>Authenticator app</h4>
+    @if (!hasAuthenticator)
+    {
+        <a id="enable-authenticator" href="/account/enableauthenticator" class="btn btn-primary">Add authenticator app</a>
+    }
+    else
+    {
+        <a id="enable-authenticator" href="/account/enableauthenticator" class="btn btn-primary me-2">Set up authenticator app</a>
+        <a id="reset-authenticator" href="/account/resetauthenticator" class="btn btn-primary">Reset authenticator app</a>
+    }
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+
+    private bool isLoading = true;
+    private bool isProcessing = false;
+    private string? loadError;
+    private string? statusMessage;
+
+    private bool hasAuthenticator;
+    private int recoveryCodesLeft;
+    private bool is2faEnabled;
+    private bool isMachineRemembered;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        // Optionally, get status message from query string if redirected from other pages
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("statusMessage", out var msg))
+        {
+            statusMessage = msg;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+        statusMessage = null;
+
+        if (authenticationStateTask == null)
+        {
+            loadError = "Unable to load authentication state.";
+            isLoading = false;
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            loadError = "User not found.";
+            isLoading = false;
+            return;
+        }
+
+        hasAuthenticator = !string.IsNullOrEmpty(await UserManager.GetAuthenticatorKeyAsync(user));
+        is2faEnabled = await UserManager.GetTwoFactorEnabledAsync(user);
+        isMachineRemembered = await SignInManager.IsTwoFactorClientRememberedAsync(user);
+        recoveryCodesLeft = await UserManager.CountRecoveryCodesAsync(user);
+
+        isLoading = false;
+    }
+
+    private async Task ForgetBrowser()
+    {
+        isProcessing = true;
+        statusMessage = null;
+
+        if (authenticationStateTask == null)
+        {
+            statusMessage = "Unable to load authentication state.";
+            isProcessing = false;
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "User not found.";
+            isProcessing = false;
+            return;
+        }
+
+        await SignInManager.ForgetTwoFactorClientAsync();
+        statusMessage = "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.";
+        isProcessing = false;
+        await LoadAsync();
+    }
+}
