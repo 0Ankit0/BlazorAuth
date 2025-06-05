@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Identity.UI.Services
 @inject UserManager<IdentityUser> UserManager
 @inject IEmailSender EmailSender
+@attribute [Authorize]
 @inject NavigationManager NavigationManager
 
 <h1>Resend email confirmation</h1>
@@ -65,11 +66,11 @@
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
         var callbackUrl = NavigationManager.BaseUri.TrimEnd('/') +
-            $"/Identity/Account/ConfirmEmail?userId={Uri.EscapeDataString(userId)}&code={Uri.EscapeDataString(code)}";
+            $"/account/confirmemail?userId={Uri.EscapeDataString(userId)}&code={Uri.EscapeDataString(code)}";
 
         await EmailSender.SendEmailAsync(
             inputModel.Email,
             "Confirm your email",
-            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+            $"Please confirm your account by <a href='{callbackUrl}'>clicking here</a>.");
     }
 }
