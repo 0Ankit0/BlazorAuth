@@ -4,6 +4,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject SignInManager<IdentityUser> SignInManager
 @inject NavigationManager NavigationManager
+@attribute [Authorize]
 @inject ILogger<TwoFactorAuthentication> Logger
 
 <h1>Two-factor authentication (2FA)</h1>
