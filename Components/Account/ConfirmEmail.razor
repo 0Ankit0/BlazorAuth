@@ -15,10 +15,10 @@ else if (!string.IsNullOrEmpty(statusMessage))
 {
     <div class="alert alert-info">@statusMessage</div>
 }
-
 @code {
     private string? statusMessage;
     private bool isLoading = true;
+    private bool shouldRedirect = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -26,7 +26,7 @@ else if (!string.IsNullOrEmpty(statusMessage))
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
         if (!query.TryGetValue("userId", out var userId) || !query.TryGetValue("code", out var code))
         {
-            NavigationManager.NavigateTo("/", forceLoad: true);
+            shouldRedirect = true;
             return;
         }
 
@@ -49,5 +49,14 @@ else if (!string.IsNullOrEmpty(statusMessage))
             statusMessage = "Invalid confirmation link.";
         }
         isLoading = false;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (shouldRedirect)
+        {
+            shouldRedirect = false;
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
     }
 }
