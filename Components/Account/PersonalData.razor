@@ -2,7 +2,9 @@
 @using Microsoft.AspNetCore.Identity
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager NavigationManager
+@attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
+
 
 <h1>Personal Data</h1>
 <p>Your email: @userEmail</p>
