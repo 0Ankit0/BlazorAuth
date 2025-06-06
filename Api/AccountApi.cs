@@ -117,6 +117,23 @@ public static class AccountApi
             return Results.Ok(new { message = "Sign-in refreshed." });
         }).RequireAuthorization();
 
+        endpoints.MapGet("/api/account/is2famachineremembered", async (
+            UserManager<IdentityUser> userManager,
+            SignInManager<IdentityUser> signInManager,
+            HttpContext httpContext) =>
+                {
+                    if (!httpContext.User.Identity?.IsAuthenticated ?? true)
+                        return Results.Unauthorized();
+
+                    var user = await userManager.GetUserAsync(httpContext.User);
+                    if (user == null)
+                        return Results.NotFound();
+
+                    var isRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user);
+                    return Results.Ok(new MachineRememberedResponse { isRemembered=isRemembered});
+                })
+        .RequireAuthorization();
+
         return endpoints;
     }
 }
@@ -125,4 +142,8 @@ public class LoginRequest
 {
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+}
+public class MachineRememberedResponse
+{
+    public bool isRemembered { get; set; }
 }
