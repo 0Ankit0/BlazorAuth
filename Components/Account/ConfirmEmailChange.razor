@@ -47,7 +47,7 @@ else if (!string.IsNullOrEmpty(statusMessage))
             var result = await UserManager.ChangeEmailAsync(user, email!, decodedCode);
             if (!result.Succeeded)
             {
-                statusMessage = "Error changing email.";
+                statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
                 isLoading = false;
                 return;
             }
@@ -56,7 +56,7 @@ else if (!string.IsNullOrEmpty(statusMessage))
             var setUserNameResult = await UserManager.SetUserNameAsync(user, email!);
             if (!setUserNameResult.Succeeded)
             {
-                statusMessage = "Error changing user name.";
+                statusMessage = string.Join(" ", setUserNameResult.Errors.Select(e => e.Description));
                 isLoading = false;
                 return;
             }
