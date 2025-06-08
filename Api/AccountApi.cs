@@ -117,22 +117,17 @@ public static class AccountApi
             return Results.Ok(new { message = "Sign-in refreshed." });
         }).RequireAuthorization();
 
-        endpoints.MapGet("/api/account/is2famachineremembered", async (
-            UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
-            HttpContext httpContext) =>
-                {
-                    if (!httpContext.User.Identity?.IsAuthenticated ?? true)
-                        return Results.Unauthorized();
+        endpoints.MapPost("/api/account/is2famachineremembered", async (
+      [FromBody] IdentityUser user,
+      UserManager<IdentityUser> userManager,
+      SignInManager<IdentityUser> signInManager) =>
+        {
+            if (user == null)
+                return Results.NotFound();
 
-                    var user = await userManager.GetUserAsync(httpContext.User);
-                    if (user == null)
-                        return Results.NotFound();
-
-                    var isRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user);
-                    return Results.Ok(new MachineRememberedResponse { isRemembered=isRemembered});
-                })
-        .RequireAuthorization();
+            var isRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user);
+            return Results.Ok(new MachineRememberedResponse { isRemembered = isRemembered });
+        });
 
         return endpoints;
     }

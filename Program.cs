@@ -38,14 +38,13 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapRazorPages();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
 
 app.MapAccountApi();
 

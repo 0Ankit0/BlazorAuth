@@ -13,35 +13,20 @@
     <div class="alert alert-info">@statusMessage</div>
 }
 
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>If you reset your authenticator key your authenticator app will not work until you reconfigure it.</strong>
-    </p>
-    <p>
-        This process disables 2FA until you verify your authenticator app.
-        If you do not complete your authenticator app configuration you may lose access to your account.
-    </p>
-</div>
-<div>
-    <button class="btn btn-danger" @onclick="ResetAuthenticatorAsync" disabled="@isProcessing">
-        Reset authenticator key
-    </button>
-</div>
+
 
 @code {
     [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
     private string? statusMessage;
     private bool isProcessing = false;
 
-    private async Task ResetAuthenticatorAsync()
+    protected override async Task OnInitializedAsync()
     {
-        isProcessing = true;
         statusMessage = null;
 
         if (authenticationStateTask == null)
         {
             statusMessage = "Unable to load authentication state.";
-            isProcessing = false;
             return;
         }
         var authState = await authenticationStateTask;
@@ -49,7 +34,6 @@
         if (user == null)
         {
             statusMessage = "User not found.";
-            isProcessing = false;
             return;
         }
 
@@ -67,6 +51,5 @@
         await Task.Delay(1000);
         NavigationManager.NavigateTo("/account/enableauthenticator", forceLoad: true);
 
-        isProcessing = false;
     }
 }
