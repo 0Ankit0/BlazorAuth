@@ -1,0 +1,128 @@
+﻿@page "/account/profile"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<IdentityUser> SignInManager
+
+<h3>Profile</h3>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info">@statusMessage</div>
+}
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (loadError != null)
+{
+    <div class="alert alert-danger">@loadError</div>
+}
+else
+{
+    <EditForm Model="inputModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-floating mb-3">
+            <InputText @bind-Value="username" class="form-control" disabled />
+            <label class="form-label">Username</label>
+        </div>
+        <div class="form-floating mb-3">
+            <InputText @bind-Value="inputModel.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
+            <label class="form-label">Phone number</label>
+            <ValidationMessage For="@(() => inputModel.PhoneNumber)" />
+        </div>
+        <button type="submit" class="w-100 btn btn-lg btn-primary" disabled="@isSaving">Save</button>
+    </EditForm>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+
+    private string? username;
+    private string? statusMessage;
+    private string? loadError;
+    private bool isLoading = true;
+    private bool isSaving = false;
+
+    private InputModel inputModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+        statusMessage = null;
+
+        if (authenticationStateTask == null)
+        {
+            loadError = "Unable to load authentication state.";
+            isLoading = false;
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            loadError = "User not found.";
+            isLoading = false;
+            return;
+        }
+
+        username = await UserManager.GetUserNameAsync(user);
+        inputModel.PhoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        isLoading = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSaving = true;
+        statusMessage = null;
+
+        if (authenticationStateTask == null)
+        {
+            statusMessage = "Unable to load authentication state.";
+            isSaving = false;
+            return;
+        }
+        var authState = await authenticationStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user == null)
+        {
+            statusMessage = "User not found.";
+            isSaving = false;
+            return;
+        }
+
+        var currentPhone = await UserManager.GetPhoneNumberAsync(user);
+        if (inputModel.PhoneNumber != currentPhone)
+        {
+            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, inputModel.PhoneNumber);
+            if (!setPhoneResult.Succeeded)
+            {
+                statusMessage = "Unexpected error when trying to set phone number.";
+                isSaving = false;
+                return;
+            }
+        }
+
+        await SignInManager.RefreshSignInAsync(user);
+        statusMessage = "Your profile has been updated";
+        isSaving = false;
+    }
+
+    public class InputModel
+    {
+        [Phone]
+        [Display(Name = "Phone number")]
+        public string? PhoneNumber { get; set; }
+    }
+}
