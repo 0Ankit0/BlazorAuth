@@ -11,6 +11,10 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
+<button class="btn btn-link mb-3" type="button" @onclick="NavigateBack">
+    <i class="bi bi-arrow-left"></i> Back
+</button>
+
 <h1>Configure authenticator app</h1>
 @if (!string.IsNullOrEmpty(statusMessage))
 {
@@ -66,7 +70,6 @@ else
     private string? authenticatorUri;
     private string? statusMessage;
     private bool isLoaded = false;
-    private bool isVerifying = false;
     private InputModel inputModel = new();
 
     // For recovery codes
@@ -147,14 +150,12 @@ else
     private async Task OnSubmitAsync()
     {
         statusMessage = string.Empty;
-        isVerifying = true;
         showRecoveryCodes = false;
         recoveryCodes = null;
 
         if (authenticationStateTask == null)
         {
             statusMessage = "Invalid state.";
-            isVerifying = false;
             return;
         }
         var authState = await authenticationStateTask;
@@ -162,14 +163,12 @@ else
         if (user == null)
         {
             statusMessage = "User not found.";
-            isVerifying = false;
             return;
         }
 
         if (string.IsNullOrWhiteSpace(inputModel.Code))
         {
             statusMessage = "Verification code is required.";
-            isVerifying = false;
             return;
         }
 
@@ -182,7 +181,6 @@ else
         if (!is2faTokenValid)
         {
             statusMessage = "Verification code is invalid.";
-            isVerifying = false;
             return;
         }
 
@@ -205,8 +203,11 @@ else
             NavigationManager.NavigateTo("/account/twofactorauthentication", forceLoad: true);
         }
 
-        isVerifying = false;
         StateHasChanged();
+    }
+    private void NavigateBack()
+    {
+        JS.InvokeVoidAsync("history.back");
     }
 
     public class InputModel
