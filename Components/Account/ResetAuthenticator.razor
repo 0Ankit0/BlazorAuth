@@ -5,7 +5,11 @@
 @inject SignInManager<IdentityUser> SignInManager
 @inject ILogger<ResetAuthenticator> Logger
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
+<button class="btn btn-link mb-3" type="button" @onclick="NavigateBack">
+    <i class="bi bi-arrow-left"></i> Back
+</button>
 <h3>Reset authenticator key</h3>
 
 @if (!string.IsNullOrEmpty(statusMessage))
@@ -18,7 +22,6 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
     private string? statusMessage;
-    private bool isProcessing = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,5 +54,9 @@
         await Task.Delay(1000);
         NavigationManager.NavigateTo("/account/enableauthenticator", forceLoad: true);
 
+    }
+    private void NavigateBack()
+    {
+        JS.InvokeVoidAsync("history.back");
     }
 }
