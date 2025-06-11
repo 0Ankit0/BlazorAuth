@@ -51,6 +51,9 @@ app.MapAccountApi();
 app.Run();
 public class TwoFactorLoginRequest
 {
+    public string? Email { get; set; }
+    public string? Password { get; set; }
+
     public string TwoFactorCode { get; set; } = string.Empty;
     public bool RememberMe { get; set; }
     public bool RememberMachine { get; set; }
