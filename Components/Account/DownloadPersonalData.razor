@@ -15,41 +15,35 @@
 }
 
 @code {
-    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    [Parameter] public IdentityUser? User { get; set; }
     private string? statusMessage;
 
     private async Task DownloadData()
     {
-        if (authenticationStateTask == null)
-        {
-            statusMessage = "Invalid state.";
-            return;
-        }
-        var authState = await authenticationStateTask;
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user == null)
+       
+        if (User == null)
         {
             statusMessage = "User not found.";
             return;
         }
 
-        Logger.LogInformation("User with ID '{UserId}' asked for their personal data.", await UserManager.GetUserIdAsync(user));
+        Logger.LogInformation("User with ID '{UserId}' asked for their personal data.", await UserManager.GetUserIdAsync(User));
 
         var personalData = new Dictionary<string, string?>();
         var personalDataProps = typeof(IdentityUser).GetProperties()
             .Where(prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
         foreach (var p in personalDataProps)
         {
-            personalData.Add(p.Name, p.GetValue(user)?.ToString() ?? "null");
+            personalData.Add(p.Name, p.GetValue(User)?.ToString() ?? "null");
         }
 
-        var logins = await UserManager.GetLoginsAsync(user);
+        var logins = await UserManager.GetLoginsAsync(User);
         foreach (var l in logins)
         {
             personalData.Add($"{l.LoginProvider} external login provider key", l.ProviderKey);
         }
 
-        var authenticatorKey = await UserManager.GetAuthenticatorKeyAsync(user);
+        var authenticatorKey = await UserManager.GetAuthenticatorKeyAsync(User);
         personalData.Add("Authenticator Key", authenticatorKey ?? "null");
 
         var json = JsonSerializer.Serialize(personalData, new JsonSerializerOptions { WriteIndented = true });

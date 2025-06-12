@@ -33,59 +33,46 @@
 }
 
 @code {
-    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    [Parameter] public IdentityUser? User { get; set; }
     private InputModel inputModel = new();
     private string? statusMessage;
     private bool requirePassword;
 
     protected override async Task OnInitializedAsync()
     {
-        if (authenticationStateTask == null)
+        
+        if (User == null)
         {
-            statusMessage = "Invalid state.";
+            statusMessage = "Unable to load User.";
             return;
         }
-        var authState = await authenticationStateTask;
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user == null)
-        {
-            statusMessage = "Unable to load user.";
-            return;
-        }
-        requirePassword = await UserManager.HasPasswordAsync(user);
+        requirePassword = await UserManager.HasPasswordAsync(User);
     }
 
     private async Task DeletePersonalDataHandler()
     {
         statusMessage = string.Empty;
 
-        if (authenticationStateTask == null)
+        if (User == null)
         {
-            statusMessage = "Invalid state.";
-            return;
-        }
-        var authState = await authenticationStateTask;
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user == null)
-        {
-            statusMessage = "Unable to load user.";
+            statusMessage = "Unable to load User.";
             return;
         }
 
-        requirePassword = await UserManager.HasPasswordAsync(user);
+        requirePassword = await UserManager.HasPasswordAsync(User);
         if (requirePassword)
         {
-            if (string.IsNullOrWhiteSpace(inputModel.Password) || !await UserManager.CheckPasswordAsync(user, inputModel.Password))
+            if (string.IsNullOrWhiteSpace(inputModel.Password) || !await UserManager.CheckPasswordAsync(User, inputModel.Password))
             {
                 statusMessage = "Incorrect password.";
                 return;
             }
         }
 
-        var result = await UserManager.DeleteAsync(user);
+        var result = await UserManager.DeleteAsync(User);
         if (!result.Succeeded)
         {
-            statusMessage = "Unexpected error occurred deleting user: " + string.Join(" ", result.Errors.Select(e => e.Description));
+            statusMessage = "Unexpected error occurred deleting User: " + string.Join(" ", result.Errors.Select(e => e.Description));
             return;
         }
 

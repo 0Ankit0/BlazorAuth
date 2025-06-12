@@ -1,77 +1,40 @@
 @page "/account/loginwith2fa"
-@using System.ComponentModel.DataAnnotations
 @inject NavigationManager NavigationManager
 
 <h1>Two-factor authentication</h1>
 <hr />
 <p>Your login is protected with an authenticator app. Enter your authenticator code below.</p>
-<EditForm Model="inputModel" OnValidSubmit="Handle2faLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    <input Value="@rememberMe" hidden/>
+<form method="post" action="/api/account/loginwith2fa" autocomplete="off">
     <div class="form-floating mb-3">
-        <InputText @bind-Value="inputModel.TwoFactorCode" class="form-control" autocomplete="off" placeholder="Authenticator code" />
+        <input name="TwoFactorCode" class="form-control" autocomplete="off" placeholder="Authenticator code" required minlength="6" maxlength="7" />
         <label class="form-label">Authenticator code</label>
-        <ValidationMessage For="@(() => inputModel.TwoFactorCode)" />
     </div>
     <div class="checkbox mb-3">
         <label class="form-label">
-            <InputCheckbox @bind-Value="inputModel.RememberMachine" />
+            <input type="checkbox" name="RememberMachine" value="true" />
             Remember this machine
         </label>
     </div>
+    <input type="hidden" name="RememberMe" value="false" />
+    <input type="hidden" name="ReturnUrl" value="@GetQuery("returnUrl", "/")" />
     <div>
-        <button type="submit" class="w-100 btn btn-lg btn-primary" disabled="@isProcessing">Log in</button>
+        <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
     </div>
-</EditForm>
-@if (!string.IsNullOrEmpty(statusMessage))
-{
-    <div class="alert alert-info mt-2">@statusMessage</div>
-}
+</form>
 <p>
     Don't have access to your authenticator device? You can
-    <a href="@($"/account/loginwithrecoverycode?returnUrl={Uri.EscapeDataString(returnUrl)}")">log in with a recovery code</a>.
+    <a href="@($"/account/loginwithrecoverycode?returnUrl={Uri.EscapeDataString(GetQuery("returnUrl", "/"))}")">log in with a recovery code</a>.
 </p>
 
 @code {
-    private InputModel inputModel = new();
-    private string? statusMessage;
-    private bool isProcessing = false;
-    private bool rememberMe = false;
-    private string returnUrl = "/";
-
-    protected override void OnInitialized()
+    private string GetQuery(string key, string defaultValue = "")
     {
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (query.TryGetValue("rememberMe", out var rememberMeValue))
+        if (query.TryGetValue(key, out var value))
         {
-            bool.TryParse(rememberMeValue, out rememberMe);
+            return value;
         }
-        if (query.TryGetValue("returnUrl", out var returnUrlValue))
-        {
-            returnUrl = returnUrlValue;
-        }
-    }
-
-    private async Task Handle2faLogin()
-    {
-        statusMessage = string.Empty;
-        isProcessing = true;
-
-        statusMessage = "2FA sign-in must be handled by a backend endpoint. See code comments.";
-        isProcessing = false;
-    }
-
-    public class InputModel
-    {
-        [Required]
-        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
-        [DataType(DataType.Text)]
-        [Display(Name = "Authenticator code")]
-        public string? TwoFactorCode { get; set; }
-
-        [Display(Name = "Remember this machine")]
-        public bool RememberMachine { get; set; }
+        return defaultValue;
     }
 }
