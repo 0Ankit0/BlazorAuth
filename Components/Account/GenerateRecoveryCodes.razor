@@ -1,9 +1,13 @@
-@page "/account/generaterecoverycodes"
+@page "/account/generaterecoverycodes" 
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Authorization
 @inject UserManager<IdentityUser> UserManager
 @inject ILogger<GenerateRecoveryCodes> Logger
+@inject IJSRuntime JS
 
+<button class="btn btn-link mb-3" type="button" @onclick="NavigateBack">
+    <i class="bi bi-arrow-left"></i> Back
+</button>
 <h1>Generate two-factor authentication (2FA) recovery codes</h1>
 
 @if (!string.IsNullOrEmpty(statusMessage))
@@ -124,5 +128,9 @@ else
         Logger.LogInformation("User with ID '{UserId}' has generated new 2FA recovery codes.", await UserManager.GetUserIdAsync(user));
         statusMessage = "You have generated new recovery codes.";
         isGenerating = false;
+    }
+    private void NavigateBack()
+    {
+        JS.InvokeVoidAsync("history.back");
     }
 }
