@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlazorAuth.Api;
@@ -13,45 +14,32 @@ public static class AccountApi
             var result = await signInManager.PasswordSignInAsync(loginRequest.Email, loginRequest.Password, false, false);
             if (result.Succeeded)
             {
-                // Redirect to homepage
-                context.Response.Redirect("/");
-                return;
+                return Results.Redirect("/");
             }
-            // Redirect back to login with error
-            context.Response.Redirect("/account/login?error=Invalid%20login%20attempt");
-        }).DisableAntiforgery();
-
-        endpoints.MapPost("/account/loginwith2fa", async (
-            [FromForm] TwoFactorLoginRequest model,
-            SignInManager<IdentityUser> signInManager,
-            UserManager<IdentityUser> userManager,
-            HttpContext httpContext) =>
-        {
-            // Ensure the user has gone through the username & password screen first
-            var user = await signInManager.GetTwoFactorAuthenticationUserAsync();
-            if (user == null)
+            else if (result.RequiresTwoFactor)
             {
-                return Results.BadRequest("Unable to load two-factor authentication user.");
-            }
-
-            var authenticatorCode = model.TwoFactorCode.Replace(" ", string.Empty).Replace("-", string.Empty);
-
-            var result = await signInManager.TwoFactorAuthenticatorSignInAsync(
-                authenticatorCode, model.RememberMe, model.RememberMachine);
-
-            if (result.Succeeded)
-            {
-                return Results.Ok(new { redirectUrl = model.ReturnUrl ?? "/" });
-            }
-            else if (result.IsLockedOut)
-            {
-                return Results.StatusCode(StatusCodes.Status423Locked); // 423 Locked
+                return Results.Redirect($"/account/loginwith2fa");
             }
             else
             {
-                return Results.BadRequest("Invalid authenticator code.");
+                return Results.Redirect("/account/login?error=Invalid");
             }
-        });
+        }).DisableAntiforgery();
+
+        endpoints.MapPost("/api/account/loginwith2fa", async (
+    [FromForm] TwoFactorLoginRequest model,
+    SignInManager<IdentityUser> signInManager,
+    UserManager<IdentityUser> userManager,
+    HttpContext httpContext) =>
+        {
+            var result = await signInManager.TwoFactorAuthenticatorSignInAsync(model.TwoFactorCode, model.RememberMe, model.RememberMachine);
+            if (result.Succeeded)
+            {
+                return Results.Redirect(model?.ReturnUrl ?? "/");
+            }
+            return Results.Redirect("/account/login?error=Invalid");
+
+        }).DisableAntiforgery();
         endpoints.MapGet("/account/externalLoginLink", async (
             HttpContext httpContext,
             SignInManager<IdentityUser> signInManager,
@@ -102,7 +90,7 @@ public static class AccountApi
             return Results.Redirect($"{returnUrl}?statusMessage=The%20external%20login%20was%20added.");
         });
 
-        endpoints.MapPost("/api/account/refreshsignin", async (
+        endpoints.MapGet("/api/account/refreshsignin", async (
             HttpContext context,
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager) =>
