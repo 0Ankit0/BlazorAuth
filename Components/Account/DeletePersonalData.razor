@@ -1,52 +1,82 @@
-
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel.DataAnnotations
 @inject UserManager<IdentityUser> UserManager
 @inject SignInManager<IdentityUser> SignInManager
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject HttpClient http
 @using Microsoft.AspNetCore.Components.Authorization
 
-<h1>Delete Personal Data</h1>
 
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-    </p>
+<div class="mb-3 d-flex align-items-center">
+    <div class="flex-grow-1 position-relative">
+        <span class="form-control-plaintext text-body">
+            Permanently delete your account and all associated data.
+        </span>
+    </div>
+    <button type="button" class="btn btn-outline-danger ms-2" @onclick="ShowPasswordInput">
+        Delete
+    </button>
 </div>
 
-<EditForm Model="inputModel" OnValidSubmit="DeletePersonalDataHandler">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    @if (requirePassword)
-    {
-        <div class="form-floating mb-3">
-            <InputText @bind-Value="inputModel.Password" class="form-control" type="password" autocomplete="current-password" placeholder="Please enter your password." />
-            <label>Password</label>
-        </div>
-    }
-    <button class="w-100 btn btn-lg btn-danger" type="submit">Delete data and close my account</button>
-</EditForm>
+@if (showPasswordInput)
+{
+    <div class="alert alert-warning" role="alert">
+        <p>
+            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
+        </p>
+    </div>
+    <EditForm Model="inputModel" OnValidSubmit="DeletePersonalDataHandler">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        @if (requirePassword)
+        {
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="inputModel.Password" class="form-control" type="password" autocomplete="current-password" placeholder="Please enter your password." />
+                <label>Password</label>
+            </div>
+        }
+        <button class="w-100 btn btn-danger" type="submit">Confirm Delete</button>
+    </EditForm>
+}
 
 @if (!string.IsNullOrEmpty(statusMessage))
 {
     <div class="alert alert-info mt-2">@statusMessage</div>
 }
 
+<style>
+    .material-symbols-outlined {
+        font-family: 'Material Symbols Outlined', sans-serif;
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+    }
+</style>
+
 @code {
     [Parameter] public IdentityUser? User { get; set; }
     private InputModel inputModel = new();
     private string? statusMessage;
     private bool requirePassword;
+    private bool showPasswordInput = false;
 
     protected override async Task OnInitializedAsync()
     {
-        
         if (User == null)
         {
             statusMessage = "Unable to load User.";
             return;
         }
         requirePassword = await UserManager.HasPasswordAsync(User);
+    }
+
+    private async Task ShowPasswordInput()
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete your account? This action cannot be undone.");
+        if (confirmed)
+        {
+            showPasswordInput = true;
+        }
     }
 
     private async Task DeletePersonalDataHandler()
@@ -76,8 +106,9 @@
             return;
         }
 
-        await SignInManager.SignOutAsync();
         statusMessage = "Your personal data has been deleted.";
+        var signoutUserResponse = await http.PostAsync(NavigationManager.BaseUri + "api/account/logout",null);
+        await SignInManager.SignOutAsync();
         NavigationManager.NavigateTo("/", true);
     }
 
