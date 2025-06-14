@@ -22,22 +22,9 @@
     </p>
 </div>
 
-@if (canDisable2fa)
-{
-    <EditForm OnValidSubmit="Disable2faHandler">
-        <button class="btn btn-danger" type="submit">Disable 2FA</button>
-    </EditForm>
-}
-else if (checked2fa)
-{
-    <div class="alert alert-info mt-2">2FA is not currently enabled for your account.</div>
-}
-
 @code {
     [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
     private string? statusMessage;
-    private bool canDisable2fa = false;
-    private bool checked2fa = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -54,28 +41,12 @@ else if (checked2fa)
             return;
         }
 
-        canDisable2fa = await UserManager.GetTwoFactorEnabledAsync(user);
-        checked2fa = true;
-        if (!canDisable2fa)
+        var is2faEnabled = await UserManager.GetTwoFactorEnabledAsync(user);
+        if (!is2faEnabled)
         {
             statusMessage = "2FA is not currently enabled for your account.";
-        }
-    }
-
-    private async Task Disable2faHandler()
-    {
-        statusMessage = string.Empty;
-
-        if (authenticationStateTask == null)
-        {
-            statusMessage = "Invalid state.";
-            return;
-        }
-        var authState = await authenticationStateTask;
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user == null)
-        {
-            statusMessage = "Unable to load user.";
+            // Optionally redirect after a short delay
+            NavigationManager.NavigateTo("/account/manage/2FA", true);
             return;
         }
 
@@ -89,6 +60,6 @@ else if (checked2fa)
         Logger.LogInformation("User with ID '{UserId}' has disabled 2fa.", await UserManager.GetUserIdAsync(user));
         statusMessage = "2FA has been disabled. You can reenable 2FA when you setup an authenticator app.";
         // Redirect to the two-factor authentication management page
-        NavigationManager.NavigateTo("/account/twofactorauthentication", true);
+        NavigationManager.NavigateTo("/account/manage/2FA", true);
     }
 }
