@@ -21,5 +21,7 @@ public static class IdentityConfig
 
         services.AddScoped<IEmailSender<IdentityUser>, IdentityEmailSender>(); //for identity-specific email sending
         services.AddScoped<IEmailSender, GeneralEmailSender>(); //for general email sending
+        services.AddScoped<ISmsSender, SmsSender>();
+
     }
 }
