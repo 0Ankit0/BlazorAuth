@@ -4,6 +4,8 @@
 @using System.ComponentModel.DataAnnotations
 @inject UserManager<IdentityUser> UserManager
 @inject SignInManager<IdentityUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject HttpClient http
 
 <h3>Profile</h3>
 
@@ -12,117 +14,104 @@
     <div class="alert alert-info">@statusMessage</div>
 }
 
-@if (isLoading)
+@if (isLoaded)
 {
-    <p>Loading...</p>
-}
-else if (loadError != null)
-{
-    <div class="alert alert-danger">@loadError</div>
+    <div class="row">
+        <div class="col-md-12">
+            <EditForm Model="inputModel" OnValidSubmit="HandleChangeUsername">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3 d-flex align-items-center">
+                    <div class="flex-grow-1 position-relative">
+                        <InputText @bind-Value="currentUsername" class="form-control" disabled />
+                    </div>
+                    <button type="button" class="btn btn-outline-primary ms-2 text-nowrap" @onclick="() => showChangeUsername = !showChangeUsername">
+                        @(showChangeUsername ? "Cancel" : "Change Username")
+                    </button>
+                </div>
+
+                @if (showChangeUsername)
+                {
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="inputModel.NewUsername" class="form-control" autocomplete="username" aria-required="true" placeholder="Please enter new username." />
+                        <label class="form-label">New username</label>
+                        <ValidationMessage For="@(() => inputModel.NewUsername)" />
+                    </div>
+                    <button type="submit" class="btn btn-lg btn-primary">Change username</button>
+                }
+            </EditForm>
+           
+        </div>
+    </div>
 }
 else
 {
-    <EditForm Model="inputModel" OnValidSubmit="HandleValidSubmit">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-
-        <div class="form-floating mb-3">
-            <InputText @bind-Value="username" class="form-control" disabled />
-            <label class="form-label">Username</label>
-        </div>
-        <div class="form-floating mb-3">
-            <InputText @bind-Value="inputModel.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
-            <label class="form-label">Phone number</label>
-            <ValidationMessage For="@(() => inputModel.PhoneNumber)" />
-        </div>
-        <button type="submit" class="w-100 btn btn-lg btn-primary" disabled="@isSaving">Save</button>
-    </EditForm>
+    <p>Loading...</p>
 }
 
 @code {
-    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    [Parameter] public IdentityUser? User { get; set; }
 
-    private string? username;
+    private string currentUsername = string.Empty;
     private string? statusMessage;
-    private string? loadError;
-    private bool isLoading = true;
-    private bool isSaving = false;
+    private bool isLoaded = false;
+    private bool showChangeUsername = false;
 
     private InputModel inputModel = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         await LoadAsync();
     }
 
     private async Task LoadAsync()
     {
-        isLoading = true;
-        loadError = null;
-        statusMessage = null;
-
-        if (authenticationStateTask == null)
-        {
-            loadError = "Unable to load authentication state.";
-            isLoading = false;
-            return;
-        }
-        var authState = await authenticationStateTask;
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user == null)
-        {
-            loadError = "User not found.";
-            isLoading = false;
-            return;
-        }
-
-        username = await UserManager.GetUserNameAsync(user);
-        inputModel.PhoneNumber = await UserManager.GetPhoneNumberAsync(user);
-
-        isLoading = false;
-    }
-
-    private async Task HandleValidSubmit()
-    {
-        isSaving = true;
-        statusMessage = null;
-
-        if (authenticationStateTask == null)
-        {
-            statusMessage = "Unable to load authentication state.";
-            isSaving = false;
-            return;
-        }
-        var authState = await authenticationStateTask;
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user == null)
+        if (User == null)
         {
             statusMessage = "User not found.";
-            isSaving = false;
+            isLoaded = false;
+            return;
+        }
+        currentUsername = await UserManager.GetUserNameAsync(User) ?? "";
+        inputModel.NewUsername = currentUsername;
+        isLoaded = true;
+    }
+
+    private async Task HandleChangeUsername()
+    {
+        statusMessage = string.Empty;
+        if (User == null)
+        {
+            statusMessage = "User not found.";
             return;
         }
 
-        var currentPhone = await UserManager.GetPhoneNumberAsync(user);
-        if (inputModel.PhoneNumber != currentPhone)
+        var username = await UserManager.GetUserNameAsync(User);
+        if (inputModel.NewUsername != username)
         {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, inputModel.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
+            User.UserName = inputModel.NewUsername;
+            var setUsernameResult = await UserManager.UpdateAsync(User);
+            if (!setUsernameResult.Succeeded)
             {
-                statusMessage = "Unexpected error when trying to set phone number.";
-                isSaving = false;
+                statusMessage = "Unexpected error when trying to set username.";
                 return;
             }
+            statusMessage = "Username changed successfully.";
+             await http.GetAsync(NavigationManager.BaseUri + "api/account/refreshsignin");
         }
-
-        await SignInManager.RefreshSignInAsync(user);
-        statusMessage = "Your profile has been updated";
-        isSaving = false;
+        else
+        {
+            statusMessage = "Your username is unchanged.";
+        }
+        showChangeUsername = false;
+        await LoadAsync();
     }
 
     public class InputModel
     {
-        [Phone]
-        [Display(Name = "Phone number")]
-        public string? PhoneNumber { get; set; }
+        [Required]
+        [Display(Name = "New username")]
+        public string NewUsername { get; set; } = string.Empty;
     }
 }
