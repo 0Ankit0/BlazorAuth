@@ -1,0 +1,72 @@
+@page "/account/confirmphone"  
+@inject NavigationManager NavigationManager  
+@inject UserManager<IdentityUser> UserManager  
+
+<h1>Confirm Phone</h1>  
+
+<p>Please enter the code sent to your phone:</p>  
+<div class="form-floating mb-3">
+    <InputText @bind-Value="code" class="form-control" autocomplete="000000" aria-required="true" placeholder="Please enter the Code." />
+    <label class="form-label">Enter Code</label>
+</div>
+<button @onclick="ConfirmCode" class="btn btn-lg btn-primary">Change username</button>
+
+@if (!string.IsNullOrEmpty(statusMessage))  
+{  
+    <div class="alert alert-info">@statusMessage</div>  
+}  
+
+@code {  
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;  
+    [Parameter]  
+    [SupplyParameterFromQuery]  
+    public string phoneNo { get; set; } = string.Empty;  
+    private string code = string.Empty;  
+    private string? statusMessage;  
+
+    private async Task ConfirmCode()  
+    {  
+        if (string.IsNullOrWhiteSpace(code))  
+        {  
+            statusMessage = "Please enter a code.";  
+            return;  
+        }  
+        var user = (await AuthenticationStateTask).User;  
+        if (!user.Identity.IsAuthenticated)  
+        {  
+            statusMessage = "You must be logged in to confirm your phone.";  
+            return;  
+        }  
+        var identityUser = await UserManager.GetUserAsync(user);  
+        if (identityUser == null)  
+        {  
+            statusMessage = "Unable to load user.";  
+            return;  
+        }  
+
+        // Fix: Access the token provider correctly using the Name property.  
+        var tokenProviderName = UserManager.Options.Tokens.ChangePhoneNumberTokenProvider;  
+        var isValidToken = await UserManager.VerifyChangePhoneNumberTokenAsync(identityUser, code, phoneNo);  
+
+        if (isValidToken)  
+        {  
+            identityUser.PhoneNumber = phoneNo;  
+            identityUser.PhoneNumberConfirmed = true;  
+            var updateResult = await UserManager.UpdateAsync(identityUser);  
+
+            if (updateResult.Succeeded)  
+            {  
+                statusMessage = "Phone number confirmed successfully.";  
+                NavigationManager.NavigateTo("/account/manage/profile");  
+            }  
+            else  
+            {  
+                statusMessage = "Failed to update user information.";  
+            }  
+        }  
+        else  
+        {  
+            statusMessage = "Invalid confirmation code. Please try again.";  
+        }  
+    }  
+}
