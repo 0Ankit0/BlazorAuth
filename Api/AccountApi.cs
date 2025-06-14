@@ -105,6 +105,14 @@ public static class AccountApi
             return Results.Ok(new { message = "Sign-in refreshed." });
         }).RequireAuthorization();
 
+        endpoints.MapPost("/api/account/logout", async (
+        SignInManager<IdentityUser> signInManager,
+        HttpContext context) =>
+            {
+                await signInManager.SignOutAsync();
+                return Results.Redirect($"/account/login?error={Uri.EscapeDataString("Your account has been deleted successfully.")}");
+            }).RequireAuthorization();
+
         endpoints.MapPost("/api/account/is2famachineremembered", async (
       [FromBody] IdentityUser user,
       UserManager<IdentityUser> userManager,
