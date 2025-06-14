@@ -48,7 +48,7 @@
             return;
         }
 
-        var user = new IdentityUser { UserName = registerModel.Email, Email = registerModel.Email };
+        var user = new IdentityUser { UserName = registerModel.Email, Email = registerModel.Email,PhoneNumber= registerModel.PhoneNo };
         var result = await UserManager.CreateAsync(user, registerModel.Password);
 
         if (result.Succeeded)
@@ -66,14 +66,14 @@
 
             if (UserManager.Options.SignIn.RequireConfirmedAccount)
             {
-                NavigationManager.NavigateTo($"/Identity/Account/RegisterConfirmation?email={Uri.EscapeDataString(registerModel.Email)}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
+                NavigationManager.NavigateTo($"/account/registerconfirmation?email={Uri.EscapeDataString(registerModel.Email)}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
                 return;
             }
             else
             {
-                await SignInManager.SignInAsync(user, isPersistent: false);
-                NavigationManager.NavigateTo(returnUrl ?? "/");
-                return;
+                statusMessage = "User Logged in Successfully.Please login to proceed.";
+                await Task.Delay(500);
+                NavigationManager.NavigateTo("/account/login");
             }
         }
         statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
@@ -82,7 +82,7 @@
     private async Task ExternalLogin(string provider)
     {
         // Redirect to external login page
-        var url = $"/Identity/Account/ExternalLogin?provider={Uri.EscapeDataString(provider)}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
+        var url = $"/account/externalLoginLink?provider={Uri.EscapeDataString(provider)}&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
         NavigationManager.NavigateTo(url, forceLoad: true);
     }
 
@@ -92,6 +92,11 @@
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
+        
+        [Required]
+        [Phone]
+        [Display(Name = "Phone Number")]
+        public string PhoneNo { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
@@ -116,6 +121,11 @@
                 <InputText @bind-Value="registerModel.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                 <label>Email</label>
                 <ValidationMessage For="@(() => registerModel.Email)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="registerModel.PhoneNo" class="form-control" autocomplete="Phone" aria-required="true" placeholder="+0000000000" />
+                <label>Phone Number</label>
+                <ValidationMessage For="@(() => registerModel.PhoneNo)" />
             </div>
             <div class="form-floating mb-3">
                 <InputText @bind-Value="registerModel.Password" class="form-control" type="password" autocomplete="new-password" aria-required="true" placeholder="password" />
