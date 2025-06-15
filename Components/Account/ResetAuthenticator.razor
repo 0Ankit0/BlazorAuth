@@ -6,11 +6,12 @@
 @inject ILogger<ResetAuthenticator> Logger
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject HttpClient http
 
 <button class="btn btn-link mb-3" type="button" @onclick="NavigateBack">
     <i class="bi bi-arrow-left"></i> Back
 </button>
-<h3>Reset authenticator key</h3>
+@* <h3>Reset authenticator key</h3> *@
 
 @if (!string.IsNullOrEmpty(statusMessage))
 {
@@ -45,14 +46,14 @@
         var userId = await UserManager.GetUserIdAsync(user);
         Logger.LogInformation("User with ID '{UserId}' has reset their authentication app key.", userId);
 
-        await SignInManager.RefreshSignInAsync(user);
-
         // Optionally, you can show a message here before redirecting
         statusMessage = "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.";
 
+        var refreshSigninResponse = await http.GetAsync(NavigationManager.BaseUri + "api/account/refreshsignin");
+        
         // Redirect to the enable authenticator page after a short delay
-        await Task.Delay(1000);
-        NavigationManager.NavigateTo("/account/enableauthenticator", forceLoad: true);
+        // await Task.Delay(1000);
+        // NavigationManager.NavigateTo("/account/enableauthenticator", forceLoad: true);
 
     }
     private void NavigateBack()
