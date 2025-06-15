@@ -15,7 +15,10 @@ public static class IdentityConfig
         services.AddAuthentication()
          .AddBearerToken(IdentityConstants.BearerScheme);
 
-        services.AddIdentity<IdentityUser, IdentityRole>()
+        services.AddIdentity<IdentityUser, IdentityRole>(options =>
+        {
+            options.User.RequireUniqueEmail = true;
+        })
            .AddEntityFrameworkStores<AuthDbContext>()
            .AddDefaultTokenProviders();
 
