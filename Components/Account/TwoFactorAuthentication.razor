@@ -1,4 +1,3 @@
-
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Authorization
 @inject UserManager<IdentityUser> UserManager
@@ -27,46 +26,55 @@ else
 {
     @if (is2faEnabled)
     {
-        @if (recoveryCodesLeft == 0)
-        {
-            <div class="alert alert-danger">
-                <strong>You have no recovery codes left.</strong>
-                <p>You must <a href="/account/generaterecoverycodes">generate a new set of recovery codes</a> before you can log in with a recovery code.</p>
-            </div>
-        }
-        else if (recoveryCodesLeft == 1)
-        {
-            <div class="alert alert-danger">
-                <strong>You have 1 recovery code left.</strong>
-                <p>You can <a href="/account/generaterecoverycodes">generate a new set of recovery codes</a>.</p>
-            </div>
-        }
-        else if (recoveryCodesLeft <= 3)
-        {
-            <div class="alert alert-warning">
-                <strong>You have @recoveryCodesLeft recovery codes left.</strong>
-                <p>You should <a href="/account/generaterecoverycodes">generate a new set of recovery codes</a>.</p>
-            </div>
-        }
-
         if (isMachineRemembered)
         {
-            <button class="btn btn-primary me-2" @onclick="ForgetBrowser" disabled="@isProcessing
-            ">Forget this browser</button>
+            <div class="mb-3 d-flex align-items-center">
+                <div class="flex-grow-1 position-relative">
+                    <span class="form-control-plaintext text-body">Forget this browser for 2FA.</span>
+                </div>
+                <button type="button" class="btn btn-outline-danger ms-2" @onclick="ForgetBrowser" disabled="@isProcessing">
+                    Forget this browser
+                </button>
+            </div>
         }
-        <a href="/account/disable2fa" class="btn btn-primary me-2">Disable 2FA</a>
-        <a href="/account/generaterecoverycodes" class="btn btn-primary me-2">Reset recovery codes</a>
+        <div class="mb-3 d-flex align-items-center">
+            <div class="flex-grow-1 position-relative">
+                <span class="form-control-plaintext text-body">Disable two-factor authentication.</span>
+            </div>
+            <a href="/account/disable2fa" class="btn btn-outline-danger ms-2">Disable 2FA</a>
+        </div>
+        <div class="mb-3 d-flex align-items-center">
+            <div class="flex-grow-1 position-relative">
+                <span class="form-control-plaintext text-body">Generate new recovery codes.</span>
+            </div>
+            <a href="/account/generaterecoverycodes" class="btn btn-outline-danger ms-2">Generate</a>
+        </div>
     }
 
     <h4>Authenticator app</h4>
     @if (!hasAuthenticator)
     {
-        <a id="enable-authenticator" href="/account/enableauthenticator" class="btn btn-primary">Add authenticator app</a>
+        <div class="mb-3 d-flex align-items-center">
+            <div class="flex-grow-1 position-relative">
+                <span class="form-control-plaintext text-body">Add an authenticator app for 2FA.</span>
+            </div>
+            <a id="enable-authenticator" href="/account/enableauthenticator" class="btn btn-outline-primary ms-2">Add authenticator app</a>
+        </div>
     }
     else
     {
-        <a id="enable-authenticator" href="/account/enableauthenticator" class="btn btn-primary me-2">Set up authenticator app</a>
-        <button id="reset-authenticator" class="btn btn-primary" @onclick="() => showResetAuthenticatorModal = true">Reset authenticator app</button>
+        <div class="mb-3 d-flex align-items-center">
+            <div class="flex-grow-1 position-relative">
+                <span class="form-control-plaintext text-body">Set up your authenticator app again.</span>
+            </div>
+            <a id="enable-authenticator" href="/account/enableauthenticator" class="btn btn-outline-primary ms-2">Set up</a>
+        </div>
+        <div class="mb-3 d-flex align-items-center">
+            <div class="flex-grow-1 position-relative">
+                <span class="form-control-plaintext text-body">Reset your authenticator app.</span>
+            </div>
+            <button type="button" id="reset-authenticator" class="btn btn-outline-danger ms-2" @onclick="() => showResetAuthenticatorModal = true">Reset</button>
+        </div>
         @if (showResetAuthenticatorModal)
         {
             <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
@@ -82,8 +90,8 @@ else
                             </p>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-danger" @onclick="ConfirmResetAuthenticator">Reset</button>
-                            <button class="btn btn-secondary" @onclick="() => showResetAuthenticatorModal = false">Cancel</button>
+                            <button type="button" class="btn btn-danger" @onclick="ConfirmResetAuthenticator">Reset</button>
+                            <button type="button" class="btn btn-secondary" @onclick="() => showResetAuthenticatorModal = false">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -93,7 +101,7 @@ else
 }
 
 @code {
-    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    [Parameter] public IdentityUser? User { get; set; }
 
     private bool isLoading = true;
     private bool isProcessing = false;
@@ -117,34 +125,26 @@ else
         }
     }
 
-    private async Task LoadAsync()  
-    {  
-        isLoading = true;  
-        loadError = null;  
-        statusMessage = null;  
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+        statusMessage = null;
 
-        if (authenticationStateTask == null)  
-        {  
-            loadError = "Unable to load authentication state.";  
-            isLoading = false;  
-            return;  
-        }  
-        var authState = await authenticationStateTask;  
-        var user = await UserManager.GetUserAsync(authState.User);  
-        if (user == null)  
-        {  
-            loadError = "User not found.";  
-            isLoading = false;  
-            return;  
-        }  
+        if (User == null)
+        {
+            loadError = "User not found.";
+            isLoading = false;
+            return;
+        }
 
-        hasAuthenticator = !string.IsNullOrEmpty(await UserManager.GetAuthenticatorKeyAsync(user));  
-        is2faEnabled = await UserManager.GetTwoFactorEnabledAsync(user);
-        var machineRememberedResponse = await Http.PostAsJsonAsync(NavigationManager.BaseUri + "api/account/is2famachineremembered", user);
-        var responseData =await machineRememberedResponse.Content.ReadFromJsonAsync<MachineRememberedResponse>();
+        hasAuthenticator = !string.IsNullOrEmpty(await UserManager.GetAuthenticatorKeyAsync(User));
+        is2faEnabled = await UserManager.GetTwoFactorEnabledAsync(User);
+        var machineRememberedResponse = await Http.PostAsJsonAsync(NavigationManager.BaseUri + "api/account/is2famachineremembered", User);
+        var responseData = await machineRememberedResponse.Content.ReadFromJsonAsync<MachineRememberedResponse>();
         isMachineRemembered = responseData?.isRemembered ?? false;
-        recoveryCodesLeft = await UserManager.CountRecoveryCodesAsync(user);  
-        isLoading = false;  
+        recoveryCodesLeft = await UserManager.CountRecoveryCodesAsync(User);
+        isLoading = false;
     }
 
     private async Task ForgetBrowser()
@@ -152,15 +152,7 @@ else
         isProcessing = true;
         statusMessage = null;
 
-        if (authenticationStateTask == null)
-        {
-            statusMessage = "Unable to load authentication state.";
-            isProcessing = false;
-            return;
-        }
-        var authState = await authenticationStateTask;
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user == null)
+        if (User == null)
         {
             statusMessage = "User not found.";
             isProcessing = false;
