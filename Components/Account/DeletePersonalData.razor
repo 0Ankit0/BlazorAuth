@@ -107,9 +107,9 @@
         }
 
         statusMessage = "Your personal data has been deleted.";
-        var signoutUserResponse = await http.PostAsync(NavigationManager.BaseUri + "api/account/logout",null);
-        await SignInManager.SignOutAsync();
-        NavigationManager.NavigateTo("/", true);
+        var signoutUserResponse = await http.GetAsync(NavigationManager.BaseUri + "api/account/logout");
+        // await SignInManager.SignOutAsync();
+        // NavigationManager.NavigateTo("/", true);
     }
 
     public class InputModel
