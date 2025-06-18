@@ -1,7 +1,11 @@
+using BlazorAuth.Services;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BlazorAuth.Api;
 
@@ -20,9 +24,17 @@ public static class AccountApi
             {
                 return Results.Redirect($"/account/loginwith2fa");
             }
+            else if (result.IsLockedOut)
+            {
+                return Results.Redirect($"/account/lockout}");
+            }
+            else if (result.IsNotAllowed)
+            {
+                return Results.Redirect($"/account/login?error={Uri.EscapeDataString("Your account is not allowed to sign in. Please contact support.")}");
+            }
             else
             {
-                return Results.Redirect("/account/login?error=Invalid");
+                return Results.Redirect($"/account/login?error={Uri.EscapeDataString("Invalid login attempt.")}");
             }
         }).DisableAntiforgery();
 
@@ -112,6 +124,14 @@ public static class AccountApi
                 await signInManager.SignOutAsync();
                 return Results.Redirect($"/account/login?error={Uri.EscapeDataString("You have been logged out. Please login to proceed.")}");
             }).RequireAuthorization();
+        
+        //endpoints.MapPost("/api/account/logout", async (
+        //SignInManager<IdentityUser> signInManager,
+        //HttpContext context) =>
+        //    {
+        //        await signInManager.SignOutAsync();
+        //        return Results.Ok(new { message = "You have been logged out." });
+        //    }).RequireAuthorization();
 
         endpoints.MapPost("/api/account/is2famachineremembered", async (
       [FromBody] IdentityUser user,
@@ -134,7 +154,12 @@ public class LoginRequest
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
+public class RequestLockoutCodeRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
 public class MachineRememberedResponse
 {
     public bool isRemembered { get; set; }
 }
+public class RemoveLockoutRequest { public string? Code { get; set; } }
