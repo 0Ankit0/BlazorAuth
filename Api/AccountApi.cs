@@ -26,7 +26,7 @@ public static class AccountApi
             }
             else if (result.IsLockedOut)
             {
-                return Results.Redirect($"/account/lockout}");
+                return Results.Redirect($"/account/lockout");
             }
             else if (result.IsNotAllowed)
             {
@@ -123,8 +123,8 @@ public static class AccountApi
             {
                 await signInManager.SignOutAsync();
                 return Results.Redirect($"/account/login?error={Uri.EscapeDataString("You have been logged out. Please login to proceed.")}");
-            }).RequireAuthorization();
-        
+            });
+
         //endpoints.MapPost("/api/account/logout", async (
         //SignInManager<IdentityUser> signInManager,
         //HttpContext context) =>
@@ -144,6 +144,27 @@ public static class AccountApi
             var isRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user);
             return Results.Ok(new MachineRememberedResponse { isRemembered = isRemembered });
         });
+        endpoints.MapPost("/api/account/loginwithrecoverycode", async (
+    [FromForm] RecoveryCodeLoginRequest model,
+    SignInManager<IdentityUser> signInManager,
+    UserManager<IdentityUser> userManager,
+    HttpContext httpContext) =>
+        {
+            var result = await signInManager.TwoFactorRecoveryCodeSignInAsync(model.RecoveryCode);
+            if (result.Succeeded)
+            {
+                return Results.Redirect(model?.ReturnUrl ?? "/");
+            }
+            else if (result.IsLockedOut)
+            {
+                return Results.Redirect("/account/lockout");
+            }
+            else
+            {
+                // Redirect back with error message
+                return Results.Redirect($"/account/loginwithrecoverycode?message={Uri.EscapeDataString("Invalid recovery code entered.")}");
+            }
+        }).DisableAntiforgery();
 
         return endpoints;
     }
@@ -153,6 +174,11 @@ public class LoginRequest
 {
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+}
+public class RecoveryCodeLoginRequest
+{
+    public string RecoveryCode { get; set; } = string.Empty;
+    public string? ReturnUrl { get; set; }
 }
 public class RequestLockoutCodeRequest
 {

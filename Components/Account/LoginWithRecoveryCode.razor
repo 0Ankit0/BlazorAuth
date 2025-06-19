@@ -1,8 +1,4 @@
 @page "/account/loginwithrecoverycode"
-@using System.ComponentModel.DataAnnotations
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
-@inject ILogger<LoginWithRecoveryCode> Logger
 @inject NavigationManager NavigationManager
 
 <h1>Recovery code verification</h1>
@@ -11,89 +7,46 @@
     You have requested to log in with a recovery code. This login will not be remembered until you provide
     an authenticator app code at log in or disable 2FA and log in again.
 </p>
-<EditForm Model="recoveryModel" OnValidSubmit="HandleRecoveryLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<form method="post" action="/api/account/loginwithrecoverycode" autocomplete="off">
     <div class="form-floating mb-3">
-        <InputText @bind-Value="recoveryModel.RecoveryCode" class="form-control" autocomplete="off" placeholder="Recovery code" />
+        <input name="RecoveryCode" class="form-control" autocomplete="off" placeholder="Recovery code" required />
         <label class="form-label">Recovery code</label>
-        <ValidationMessage For="@(() => recoveryModel.RecoveryCode)" />
     </div>
-    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-</EditForm>
+    <input type="hidden" name="ReturnUrl" value="@GetQuery("returnUrl", "/")" />
+    <div>
+        <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+    </div>
+</form>
+<p>
+    Lost your recovery codes? <a href="/account/forgotpassword">Reset your password</a>.
+</p>
 @if (!string.IsNullOrEmpty(statusMessage))
 {
     <div class="alert alert-info mt-2">@statusMessage</div>
 }
 
 @code {
-    private RecoveryModel recoveryModel = new();
     private string? statusMessage;
-    private string? returnUrl;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        // Parse returnUrl from query string if present
+        // Optionally, display a status message from the query string (e.g., after a failed attempt)
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (query.TryGetValue("returnUrl", out var returnUrlValue))
+        if (query.TryGetValue("message", out var msg))
         {
-            returnUrl = returnUrlValue;
-        }
-
-        // Ensure the user has gone through the username & password screen first
-        var user = await SignInManager.GetTwoFactorAuthenticationUserAsync();
-        if (user == null)
-        {
-            throw new InvalidOperationException("Unable to load two-factor authentication user.");
+            statusMessage = msg;
         }
     }
 
-    private async Task HandleRecoveryLogin()
+    private string GetQuery(string key, string defaultValue = "")
     {
-        statusMessage = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(recoveryModel.RecoveryCode))
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue(key, out var value))
         {
-            statusMessage = "Recovery code is required.";
-            return;
+            return value;
         }
-
-        // Remove spaces from the recovery code
-        var recoveryCode = recoveryModel.RecoveryCode.Replace(" ", string.Empty);
-
-        var user = await SignInManager.GetTwoFactorAuthenticationUserAsync();
-        if (user == null)
-        {
-            throw new InvalidOperationException("Unable to load two-factor authentication user.");
-        }
-
-        var result = await SignInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
-
-        var userId = await UserManager.GetUserIdAsync(user);
-
-        if (result.Succeeded)
-        {
-            Logger.LogInformation("User with ID '{UserId}' logged in with a recovery code.", userId);
-            NavigationManager.NavigateTo(returnUrl ?? "/");
-        }
-        else if (result.IsLockedOut)
-        {
-            Logger.LogWarning("User account locked out.");
-            NavigationManager.NavigateTo("/account/lockout");
-        }
-        else
-        {
-            Logger.LogWarning("Invalid recovery code entered for user with ID '{UserId}' ", userId);
-            statusMessage = "Invalid recovery code entered.";
-        }
-    }
-
-    public class RecoveryModel
-    {
-        [Required]
-        [DataType(DataType.Text)]
-        [Display(Name = "Recovery Code")]
-        public string? RecoveryCode { get; set; }
+        return defaultValue;
     }
 }
