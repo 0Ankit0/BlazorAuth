@@ -4,6 +4,7 @@
 @inject RoleManager<IdentityRole> RoleManager
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager NavigationManager
+@attribute [Authorize(Roles ="Admin")]
 
 @code {
     [Parameter] public string RoleId { get; set; } = string.Empty;

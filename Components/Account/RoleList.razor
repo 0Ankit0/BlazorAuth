@@ -3,6 +3,7 @@
 @inject RoleManager<IdentityRole> RoleManager
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "Admin")]
 
 <div class="container mt-4">
     <div class="row mb-3">
@@ -37,17 +38,20 @@
                 <tbody>
                     @foreach (var role in roles)
                     {
-                        var assignedCount = roleUserCounts.TryGetValue(role.Id, out var count) ? count : 0;
+                        var assignedUsers = roleUserNames.TryGetValue(role.Id, out var users) ? users : new List<string>();
                         <tr>
                             <td>@role.Name</td>
                             <td>
-                                @if (assignedCount > 0)
+                                @if (assignedUsers.Count > 0)
                                 {
-                                    <span class="badge bg-info text-dark">@assignedCount</span>
+                                    @foreach (var username in assignedUsers)
+                                    {
+                                        <span class="badge bg-info text-dark me-1">@username</span>
+                                    }
                                 }
                                 else
                                 {
-                                    <span class="text-muted">0</span>
+                                    <span class="text-muted">None</span>
                                 }
                             </td>
                             <td>
@@ -57,8 +61,8 @@
                                     </a>
                                     <button class="btn btn-sm btn-outline-danger"
                                             @onclick="() => ConfirmDelete(role)"
-                                            disabled="@(assignedCount > 0)"
-                                            title="@(assignedCount > 0 ? "Cannot delete: role assigned to users" : "Delete")">
+                                            disabled="@(assignedUsers.Count > 0)"
+                                            title="@(assignedUsers.Count > 0 ? "Cannot delete: role assigned to users" : "Delete")">
                                         <i class="bi bi-trash"></i> Delete
                                     </button>
                                     <a class="btn btn-sm btn-outline-info" href="/account/roles/assign/@role.Id">
@@ -108,7 +112,7 @@
 
 @code {
     private List<IdentityRole> roles = new();
-    private Dictionary<string, int> roleUserCounts = new();
+    private Dictionary<string, List<string>> roleUserNames = new();
     private string? statusMessage;
     private string? showDeleteConfirmId;
     private IdentityRole? roleToDelete;
@@ -116,25 +120,25 @@
     protected override async Task OnInitializedAsync()
     {
         roles = RoleManager.Roles.ToList();
-        await LoadRoleUserCounts();
+        await LoadRoleUserNames();
     }
 
-    private async Task LoadRoleUserCounts()
+    private async Task LoadRoleUserNames()
     {
-        roleUserCounts = new Dictionary<string, int>();
+        roleUserNames = new Dictionary<string, List<string>>();
         var allUsers = UserManager.Users.ToList();
         foreach (var role in roles)
         {
-            int count = 0;
+            var userNames = new List<string>();
             foreach (var user in allUsers)
             {
                 var userRoles = await UserManager.GetRolesAsync(user);
                 if (userRoles.Contains(role.Name))
                 {
-                    count++;
+                    userNames.Add(user.UserName ?? user.Email ?? user.Id);
                 }
             }
-            roleUserCounts[role.Id] = count;
+            roleUserNames[role.Id] = userNames;
         }
     }
 
@@ -152,10 +156,9 @@
 
     private async Task DeleteRole(IdentityRole role)
     {
-        // Double-check on backend
-        if (roleUserCounts.TryGetValue(role.Id, out var count) && count > 0)
+        if (roleUserNames.TryGetValue(role.Id, out var users) && users.Count > 0)
         {
-            statusMessage = $"Cannot delete role '{role.Name}' because it is assigned to {count} user(s).";
+            statusMessage = $"Cannot delete role '{role.Name}' because it is assigned to {users.Count} user(s).";
         }
         else
         {
@@ -164,7 +167,7 @@
             {
                 statusMessage = $"Role '{role.Name}' deleted.";
                 roles = RoleManager.Roles.ToList();
-                await LoadRoleUserCounts();
+                await LoadRoleUserNames();
             }
             else
             {
