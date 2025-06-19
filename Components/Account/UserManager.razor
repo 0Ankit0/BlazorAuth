@@ -3,6 +3,7 @@
 @using System.Security.Claims
 @inject UserManager<IdentityUser> userManager
 @inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "Admin")]
 
 <h1 class="display-6 mb-4">User Management</h1>
 
