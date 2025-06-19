@@ -48,7 +48,12 @@
             return;
         }
 
-        var user = new IdentityUser { UserName = registerModel.Email, Email = registerModel.Email,PhoneNumber= registerModel.PhoneNo };
+        var user = new IdentityUser
+        {
+            UserName = registerModel.Username,
+            Email = registerModel.Email,
+            PhoneNumber = registerModel.PhoneNo
+        };
         var result = await UserManager.CreateAsync(user, registerModel.Password);
 
         if (result.Succeeded)
@@ -89,10 +94,15 @@
     public class RegisterModel
     {
         [Required]
+        [StringLength(32, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 3)]
+        [Display(Name = "Username")]
+        public string Username { get; set; } = string.Empty;
+
+        [Required]
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
-        
+
         [Required]
         [Phone]
         [Display(Name = "Phone Number")]
@@ -118,12 +128,17 @@
             <DataAnnotationsValidator />
             <ValidationSummary />
             <div class="form-floating mb-3">
-                <InputText @bind-Value="registerModel.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <InputText @bind-Value="registerModel.Username" class="form-control" autocomplete="username" aria-required="true" placeholder="username" />
+                <label>Username</label>
+                <ValidationMessage For="@(() => registerModel.Username)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="registerModel.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" />
                 <label>Email</label>
                 <ValidationMessage For="@(() => registerModel.Email)" />
             </div>
             <div class="form-floating mb-3">
-                <InputText @bind-Value="registerModel.PhoneNo" class="form-control" autocomplete="Phone" aria-required="true" placeholder="+0000000000" />
+                <InputText @bind-Value="registerModel.PhoneNo" class="form-control" autocomplete="tel" aria-required="true" placeholder="+0000000000" />
                 <label>Phone Number</label>
                 <ValidationMessage For="@(() => registerModel.PhoneNo)" />
             </div>
@@ -152,7 +167,7 @@
             {
                 <div>
                     <p>
-                        There are no external authentication services configured. 
+                        There are no external authentication services configured.
                     </p>
                 </div>
             }
