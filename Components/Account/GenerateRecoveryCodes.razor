@@ -4,6 +4,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject ILogger<GenerateRecoveryCodes> Logger
 @inject IJSRuntime JS
+@attribute [Authorize]
 
 <button class="btn btn-link mb-3" type="button" @onclick="NavigateBack">
     <i class="bi bi-arrow-left"></i> Back
