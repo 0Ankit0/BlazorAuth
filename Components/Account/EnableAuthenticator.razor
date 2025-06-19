@@ -57,6 +57,21 @@
             </EditForm>
         </li>
     </ol>
+    @if (showRecoveryCodes && recoveryCodes != null && recoveryCodes.Length > 0)
+{
+    <div class="alert alert-success mt-4">
+        <h4>Recovery Codes</h4>
+        <p>
+            Save these recovery codes in a safe place. Each code can be used once to access your account if you lose access to your authenticator app.
+        </p>
+        <ul class="list-group mb-3">
+            @foreach (var codes in recoveryCodes)
+            {
+                <li class="list-group-item">@codes</li>
+            }
+        </ul>
+    </div>
+}
 }
 else
 {
@@ -83,7 +98,7 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !string.IsNullOrEmpty(authenticatorUri))
+        if (!string.IsNullOrEmpty(authenticatorUri))
         {
             await JS.InvokeVoidAsync("renderQrCode", "qrCode", authenticatorUri);
         }
@@ -200,7 +215,7 @@ else
         else
         {
             // Optionally, redirect to a 2FA management page
-            NavigationManager.NavigateTo("/account/twofactorauthentication", forceLoad: true);
+            NavigationManager.NavigateTo("/account/manage/2FA", forceLoad: true);
         }
 
         StateHasChanged();

@@ -1,6 +1,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@inject HttpClient Http
 
 <nav>
     <ul class="nav">
@@ -38,7 +39,7 @@
                         </li>
                         <li><hr class="dropdown-divider" /></li>
                         <li>
-                            <button class="dropdown-item" type="button" @onclick="@(() => NavigationManager.NavigateTo("/api/account/logout"))">
+                            <button class="dropdown-item" type="button" @onclick="LogoutAsync">
                                 Logout
                             </button>
                         </li>
@@ -62,5 +63,18 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+    }
+    private async Task LogoutAsync()
+    {
+        NavigationManager.NavigateTo("/api/account/logout",forceLoad:true);
+        // var response = await Http.PostAsync(NavigationManager.BaseUri+"api/account/logout", null);
+        // if (response.IsSuccessStatusCode)
+        // {
+        //     NavigationManager.NavigateTo("/account/login", forceLoad: true);
+        // }
+        // else
+        // {
+        //     Optionally handle error
+        // }
     }
 }

@@ -5,6 +5,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject SignInManager<IdentityUser> SignInManager
 @inject NavigationManager NavigationManager
+@attribute [Authorize]
 
 <h1>Manage your external logins</h1>
 @if (isLoading)

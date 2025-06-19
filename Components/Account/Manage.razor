@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager NavigationManager
+@attribute [Authorize]
 
 @code {
     [Parameter]
@@ -70,44 +71,51 @@
         <hr>
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
-                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/profile")" class="nav-link @(activeSection == "profile" ? "active" : "text-dark")"
-                   @onclick="@(() => SetSection("profile"))" @onclick:preventDefault="true">
+                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/profile")"
+                    class="nav-link @(activeSection == "profile" ? "active" : "text-dark")"
+                    @onclick="@(() => SetSection("profile"))" @onclick:preventDefault="true">
                     <i class="bi bi-person-circle me-2"></i> Profile
                 </a>
             </li>
             <li>
-                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/2FA")" class="nav-link @(activeSection == "2FA" ? "active" : "text-dark")"
-                   @onclick="@(() => SetSection("2FA"))" @onclick:preventDefault="true">
+                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/2FA")"
+                    class="nav-link @(activeSection == "2FA" ? "active" : "text-dark")"
+                    @onclick="@(() => SetSection("2FA"))" @onclick:preventDefault="true">
                     <i class="bi bi-person-badge me-2"></i> 2FA
                 </a>
             </li>
             <li>
-                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/privacy")" class="nav-link @(activeSection == "privacy" ? "active" : "text-dark")"
-                   @onclick="@(() => SetSection("privacy"))" @onclick:preventDefault="true">
+                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/privacy")"
+                    class="nav-link @(activeSection == "privacy" ? "active" : "text-dark")"
+                    @onclick="@(() => SetSection("privacy"))" @onclick:preventDefault="true">
                     <i class="bi bi-shield-lock me-2"></i> Data & privacy
                 </a>
             </li>
             <li>
-                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/security")" class="nav-link @(activeSection == "security" ? "active" : "text-dark")"
-                   @onclick="@(() => SetSection("security"))" @onclick:preventDefault="true">
+                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/security")"
+                    class="nav-link @(activeSection == "security" ? "active" : "text-dark")"
+                    @onclick="@(() => SetSection("security"))" @onclick:preventDefault="true">
                     <i class="bi bi-lock-fill me-2"></i> Security
                 </a>
             </li>
             <li>
-                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/people")" class="nav-link @(activeSection == "people" ? "active" : "text-dark")"
-                   @onclick="@(() => SetSection("people"))" @onclick:preventDefault="true">
+                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/people")"
+                    class="nav-link @(activeSection == "people" ? "active" : "text-dark")"
+                    @onclick="@(() => SetSection("people"))" @onclick:preventDefault="true">
                     <i class="bi bi-people-fill me-2"></i> People & sharing
                 </a>
             </li>
             <li>
-                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/payments")" class="nav-link @(activeSection == "payments" ? "active" : "text-dark")"
-                   @onclick="@(() => SetSection("payments"))" @onclick:preventDefault="true">
+                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/payments")"
+                    class="nav-link @(activeSection == "payments" ? "active" : "text-dark")"
+                    @onclick="@(() => SetSection("payments"))" @onclick:preventDefault="true">
                     <i class="bi bi-credit-card me-2"></i> Payments & subscriptions
                 </a>
             </li>
             <li>
-                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/about")" class="nav-link @(activeSection == "about" ? "active" : "text-dark")"
-                   @onclick="@(() => SetSection("about"))" @onclick:preventDefault="true">
+                <a href="@NavigationManager.ToAbsoluteUri($"/account/manage/about")"
+                    class="nav-link @(activeSection == "about" ? "active" : "text-dark")"
+                    @onclick="@(() => SetSection("about"))" @onclick:preventDefault="true">
                     <i class="bi bi-info-circle me-2"></i> About
                 </a>
             </li>
@@ -128,7 +136,7 @@
         {
             <Email User="user" />
             <Profile User="user" />
-            <Phone User="user"/>
+            <Phone User="user" />
         }
         else if (activeSection == "security")
         {
@@ -143,6 +151,7 @@
         {
             <DownloadPersonalData User="user" />
             <DeletePersonalData User="user" />
+            <EnableLockout User="user" />
         }
         else if (activeSection == "people")
         {
