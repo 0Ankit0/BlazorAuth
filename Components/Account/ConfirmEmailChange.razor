@@ -18,33 +18,40 @@ else if (!string.IsNullOrEmpty(statusMessage))
 }
 
 @code {
+     [Parameter, SupplyParameterFromQuery]
+     public string? UserId { get; set; }
+    
+     [Parameter, SupplyParameterFromQuery]
+     public string? Email { get; set; }
+    
+     [Parameter, SupplyParameterFromQuery]
+     public string? Code { get; set; }
+
     private string? statusMessage;
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (!query.TryGetValue("userId", out var userId) ||
-            !query.TryGetValue("email", out var email) ||
-            !query.TryGetValue("code", out var code))
-        {
+         if (string.IsNullOrEmpty(UserId) ||
+             string.IsNullOrEmpty(Email) ||
+             string.IsNullOrEmpty(Code))
+         {
             NavigationManager.NavigateTo("/", forceLoad: true);
             return;
         }
 
-        var user = await UserManager.FindByIdAsync(userId!);
+        var user = await UserManager.FindByIdAsync(UserId!);
         if (user == null)
         {
-            statusMessage = $"Unable to load user with ID '{userId}'.";
+            statusMessage = $"Unable to load user with ID '{UserId}'.";
             isLoading = false;
             return;
         }
 
         try
         {
-            var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code!));
-            var result = await UserManager.ChangeEmailAsync(user, email!, decodedCode);
+            var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code!));
+            var result = await UserManager.ChangeEmailAsync(user, Email!, decodedCode);
             if (!result.Succeeded)
             {
                 statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
@@ -52,7 +59,7 @@ else if (!string.IsNullOrEmpty(statusMessage))
                 return;
             }
 
-            //var setUserNameResult = await UserManager.SetUserNameAsync(user, email!);
+            //var setUserNameResult = await UserManager.SetUserNameAsync(user, Email!);
             //if (!setUserNameResult.Succeeded)
             //{
                // statusMessage = string.Join(" ", setUserNameResult.Errors.Select(e => e.Description));
