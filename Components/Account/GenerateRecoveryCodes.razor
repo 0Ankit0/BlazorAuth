@@ -124,7 +124,7 @@ else
         }
 
         var codes = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
-        recoveryCodes = codes.ToArray();
+        recoveryCodes = codes?.ToArray();
 
         Logger.LogInformation("User with ID '{UserId}' has generated new 2FA recovery codes.", await UserManager.GetUserIdAsync(user));
         statusMessage = "You have generated new recovery codes.";
