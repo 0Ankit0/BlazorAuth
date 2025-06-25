@@ -20,7 +20,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;  
     [Parameter]  
     [SupplyParameterFromQuery]  
-    public string phoneNo { get; set; } = string.Empty;  
+    public string PhoneNo { get; set; } = string.Empty;  
     private string code = string.Empty;  
     private string? statusMessage;  
 
@@ -44,25 +44,12 @@
             return;  
         }  
 
-        // Fix: Access the token provider correctly using the Name property.  
-        var tokenProviderName = UserManager.Options.Tokens.ChangePhoneNumberTokenProvider;  
-        var isValidToken = await UserManager.VerifyChangePhoneNumberTokenAsync(identityUser, code, phoneNo);  
+       var result = await userManager.ChangePhoneNumberAsync(identityUser, PhoneNo, Code);
 
-        if (isValidToken)  
+        if (result.Succeeded)  
         {  
-            identityUser.PhoneNumber = phoneNo;  
-            identityUser.PhoneNumberConfirmed = true;  
-            var updateResult = await UserManager.UpdateAsync(identityUser);  
-
-            if (updateResult.Succeeded)  
-            {  
                 statusMessage = "Phone number confirmed successfully.";  
                 NavigationManager.NavigateTo("/account/manage/profile");  
-            }  
-            else  
-            {  
-                statusMessage = "Failed to update user information.";  
-            }  
         }  
         else  
         {  
