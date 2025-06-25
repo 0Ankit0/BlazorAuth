@@ -90,8 +90,7 @@ else
         var username = await UserManager.GetUserNameAsync(User);
         if (inputModel.NewUsername != username)
         {
-            User.UserName = inputModel.NewUsername;
-            var setUsernameResult = await UserManager.UpdateAsync(User);
+            var setUsernameResult = await userManager.SetUserNameAsync(User,inputModel.NewUsername);
             if (!setUsernameResult.Succeeded)
             {
                 statusMessage = "Unexpected error when trying to set username.";
