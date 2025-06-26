@@ -1,11 +1,3 @@
-@using Microsoft.AspNetCore.Identity
-@using System.Text.Json
-@using System.Reflection
-@using Microsoft.AspNetCore.Components.Authorization
-@inject UserManager<IdentityUser> UserManager
-@inject ILogger<DownloadPersonalData> Logger
-@inject IJSRuntime JS
-
 <h3>Personal Data</h3>
 <div class="mb-3 d-flex align-items-center">
     <div class="flex-grow-1 position-relative">
@@ -27,42 +19,3 @@
         vertical-align: middle;
     }
 </style>
-
-@code {
-    [Parameter] public IdentityUser? User { get; set; }
-    private string? statusMessage;
-
-    private async Task DownloadData()
-    {
-        if (User == null)
-        {
-            statusMessage = "User not found.";
-            return;
-        }
-
-        Logger.LogInformation("User with ID '{UserId}' asked for their personal data.", await UserManager.GetUserIdAsync(User));
-
-        var personalData = new Dictionary<string, string?>();
-        var personalDataProps = typeof(IdentityUser).GetProperties()
-            .Where(prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
-        foreach (var p in personalDataProps)
-        {
-            personalData.Add(p.Name, p.GetValue(User)?.ToString() ?? "null");
-        }
-
-        var logins = await UserManager.GetLoginsAsync(User);
-        foreach (var l in logins)
-        {
-            personalData.Add($"{l.LoginProvider} external login provider key", l.ProviderKey);
-        }
-
-        var authenticatorKey = await UserManager.GetAuthenticatorKeyAsync(User);
-        personalData.Add("Authenticator Key", authenticatorKey ?? "null");
-
-        var json = JsonSerializer.Serialize(personalData, new JsonSerializerOptions { WriteIndented = true });
-        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-        await JS.InvokeVoidAsync("downloadFileFromBytes", "PersonalData.json", "application/json", bytes);
-
-        statusMessage = "Personal data downloaded.";
-    }
-}

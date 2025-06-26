@@ -1,58 +1,6 @@
 @page "/account/manage"
 @page "/account/manage/{Section}"
-@using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.Components.Authorization
-@inject UserManager<IdentityUser> UserManager
-@inject NavigationManager NavigationManager
 @attribute [Authorize]
-
-@code {
-    [Parameter]
-    public string? Section { get; set; }
-    private bool _navigatedToSection = false;
-
-    private string activeSection = "profile";
-    private IdentityUser? user;
-    [CascadingParameter] private Task<AuthenticationState>? authenticationStateTask { get; set; }
-    private bool isLoaded = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (authenticationStateTask != null)
-        {
-            var authState = await authenticationStateTask;
-            user = await UserManager.GetUserAsync(authState.User);
-        }
-        isLoaded = true;
-    }
-
-    protected override void OnParametersSet()
-    {
-        // If no section is provided, navigate to the default section in the URL
-        if (string.IsNullOrWhiteSpace(Section))
-        {
-            if (!_navigatedToSection)
-            {
-                _navigatedToSection = true;
-                NavigationManager.NavigateTo("/account/manage/profile", forceLoad: false);
-            }
-            activeSection = "profile";
-        }
-        else
-        {
-            activeSection = Section;
-        }
-    }
-
-    private void SetSection(string section)
-    {
-        // Update the URL and the active section
-        if (activeSection != section)
-        {
-            NavigationManager.NavigateTo($"/account/manage/{section}", forceLoad: false);
-        }
-    }
-}
 
 <style>
     .nav-pills .nav-link.active {

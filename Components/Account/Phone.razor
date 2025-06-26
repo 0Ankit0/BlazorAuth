@@ -1,10 +1,4 @@
-﻿@using Microsoft.AspNetCore.Identity
-@using System.ComponentModel.DataAnnotations
-@using Microsoft.AspNetCore.WebUtilities
-@inject UserManager<IdentityUser> UserManager
-@inject NavigationManager NavigationManager
-@attribute [Authorize]
-@inject ISmsSender smsSender
+﻿@attribute [Authorize]
 
 <h3>Phone Number</h3>
 @if (isLoaded)
@@ -25,9 +19,11 @@
                     }
                     else
                     {
-                        <button type="button" class="btn btn-outline-secondary ms-2 align-self-center text-nowrap" @onclick="SendVerificationSms">Confirm Phone</button>
+                        <button type="button" class="btn btn-outline-secondary ms-2 align-self-center text-nowrap"
+                            @onclick="SendVerificationSms">Confirm Phone</button>
                     }
-                    <button type="button" class="btn btn-outline-primary ms-2 text-nowrap" @onclick="() => showChangePhone = !showChangePhone">
+                    <button type="button" class="btn btn-outline-primary ms-2 text-nowrap"
+                        @onclick="() => showChangePhone = !showChangePhone">
                         @(showChangePhone ? "Cancel" : "Change Phone")
                     </button>
                 </div>
@@ -35,7 +31,8 @@
                 @if (showChangePhone)
                 {
                     <div class="form-floating mb-3">
-                        <InputText @bind-Value="inputModel.NewPhone" class="form-control" autocomplete="tel" aria-required="true" placeholder="Please enter new phone number." />
+                        <InputText @bind-Value="inputModel.NewPhone" class="form-control" autocomplete="tel"
+                            aria-required="true" placeholder="Please enter new phone number." />
                         <label class="form-label">New phone number</label>
                         <ValidationMessage For="@(() => inputModel.NewPhone)" />
                     </div>
@@ -52,91 +49,4 @@
 else
 {
     <p>Loading...</p>
-}
-
-@code {
-    [Parameter] public IdentityUser? User { get; set; }
-
-    private string currentPhone = string.Empty;
-    private bool isPhoneConfirmed;
-    private string? statusMessage;
-    private bool isLoaded = false;
-    private bool showChangePhone = false;
-
-    private InputModel inputModel = new();
-
-    protected override async Task OnParametersSetAsync()
-    {
-        await LoadAsync();
-    }
-
-    private async Task LoadAsync()
-    {
-        if (User == null)
-        {
-            statusMessage = "User not found.";
-            isLoaded = false;
-            return;
-        }
-        currentPhone = await UserManager.GetPhoneNumberAsync(User) ?? "";
-        inputModel.NewPhone = currentPhone;
-        isPhoneConfirmed = await UserManager.IsPhoneNumberConfirmedAsync(User);
-        isLoaded = true;
-    }
-
-    private async Task HandleChangePhone()
-    {
-        statusMessage = string.Empty;
-        if (User == null)
-        {
-            statusMessage = "User not found.";
-            return;
-        }
-
-        var phone = await UserManager.GetPhoneNumberAsync(User);
-        if (inputModel.NewPhone != phone)
-        {
-            var userId = await UserManager.GetUserIdAsync(User);
-            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(User, inputModel.NewPhone);
-            await smsSender.SendSmsAsync(inputModel.NewPhone, $"Your confirmation code is: {code}");
-
-            statusMessage = "Verification code sent to new phone number. Please check your SMS.";
-            await Task.Delay(500);
-            NavigationManager.NavigateTo($"/account/confirmphone?phoneNo={Uri.EscapeDataString(inputModel.NewPhone)}");
-
-        }
-        else
-        {
-            statusMessage = "Your phone number is unchanged.";
-        }
-        showChangePhone = false;
-        await LoadAsync();
-    }
-
-    private async Task SendVerificationSms()
-    {
-        statusMessage = string.Empty;
-        if (User == null)
-        {
-            statusMessage = "User not found.";
-            return;
-        }
-
-        var phone = await UserManager.GetPhoneNumberAsync(User);
-        var code = await UserManager.GenerateChangePhoneNumberTokenAsync(User, phone);
-        await smsSender.SendSmsAsync(phone, $"Your confirmation code is: {code}");
-
-        statusMessage = "Verification code sent. Please check your SMS.";
-        await Task.Delay(500);
-        NavigationManager.NavigateTo($"/account/confirmphone?phoneNo={Uri.EscapeDataString(phone)}");
-
-    }
-
-    public class InputModel
-    {
-        [Required]
-        [Phone]
-        [Display(Name = "New phone number")]
-        public string NewPhone { get; set; } = string.Empty;
-    }
 }

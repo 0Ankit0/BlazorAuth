@@ -1,5 +1,4 @@
 @page "/account/loginwithrecoverycode"
-@inject NavigationManager NavigationManager
 
 <h1>Recovery code verification</h1>
 <hr />
@@ -23,30 +22,4 @@
 @if (!string.IsNullOrEmpty(statusMessage))
 {
     <div class="alert alert-info mt-2">@statusMessage</div>
-}
-
-@code {
-    private string? statusMessage;
-
-    protected override void OnInitialized()
-    {
-        // Optionally, display a status message from the query string (e.g., after a failed attempt)
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (query.TryGetValue("message", out var msg))
-        {
-            statusMessage = msg;
-        }
-    }
-
-    private string GetQuery(string key, string defaultValue = "")
-    {
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (query.TryGetValue(key, out var value))
-        {
-            return value;
-        }
-        return defaultValue;
-    }
 }

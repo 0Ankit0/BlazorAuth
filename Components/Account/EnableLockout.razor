@@ -1,13 +1,7 @@
-@using Microsoft.AspNetCore.Identity
-@using System.ComponentModel.DataAnnotations
+@page "/enable-lockout"
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
-@inject UserManager<IdentityUser> UserManager
-@inject NavigationManager NavigationManager
-@inject IJSRuntime JS
-@inject HttpClient http
-@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="mb-3 d-flex align-items-center">
     <div class="flex-grow-1 position-relative">
@@ -24,7 +18,8 @@
 {
     <div class="alert alert-warning" role="alert">
         <p>
-            <strong>Enabling lockout will immediately lock your account. You will need to unlock it via email code to regain access.</strong>
+            <strong>Enabling lockout will immediately lock your account. You will need to unlock it via email code to regain
+                access.</strong>
         </p>
     </div>
     <EditForm Model="inputModel" OnValidSubmit="EnableLockoutHandler">
@@ -33,7 +28,8 @@
         @if (requirePassword)
         {
             <div class="form-floating mb-3">
-                <InputText @bind-Value="inputModel.Password" class="form-control" type="password" autocomplete="current-password" placeholder="Please enter your password." />
+                <InputText @bind-Value="inputModel.Password" class="form-control" type="password"
+                    autocomplete="current-password" placeholder="Please enter your password." />
                 <label>Password</label>
             </div>
         }
@@ -53,74 +49,3 @@
         vertical-align: middle;
     }
 </style>
-
-@code {
-    [Parameter] public IdentityUser? User { get; set; }
-    private InputModel inputModel = new();
-    private string? statusMessage;
-    private bool requirePassword;
-    private bool showPasswordInput = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (User == null)
-        {
-            statusMessage = "Unable to load User.";
-            return;
-        }
-        requirePassword = await UserManager.HasPasswordAsync(User);
-    }
-
-    private async Task ShowPasswordInput()
-    {
-        statusMessage = string.Empty;
-        if (User == null)
-        {
-            statusMessage = "Unable to load User.";
-            return;
-        }
-        
-            showPasswordInput = true;
-    }
-
-    private async Task EnableLockoutHandler()
-    {
-        statusMessage = string.Empty;
-
-        if (User == null)
-        {
-            statusMessage = "Unable to load User.";
-            return;
-        }
-
-        requirePassword = await UserManager.HasPasswordAsync(User);
-        if (requirePassword)
-        {
-            if (string.IsNullOrWhiteSpace(inputModel.Password) || !await UserManager.CheckPasswordAsync(User, inputModel.Password))
-            {
-                statusMessage = "Incorrect password.";
-                return;
-            }
-        }
-
-        // Enable lockout by setting LockoutEnd to a future date (e.g., 100 years from now)
-        var result = await UserManager.SetLockoutEndDateAsync(User, DateTimeOffset.UtcNow.AddYears(100));
-        if (result.Succeeded)
-        {
-            statusMessage = "Your account has been locked out. You will need to unlock it via the unlock process.";
-            // Optionally, sign out the user
-            var signoutUserResponse = await http.GetAsync(NavigationManager.BaseUri + "api/account/logout");
-        }
-        else
-        {
-            statusMessage = "Unexpected error occurred enabling lockout: " + string.Join(" ", result.Errors.Select(e => e.Description));
-        }
-    }
-
-    public class InputModel
-    {
-        [Required(ErrorMessage = "Password is required.")]
-        [DataType(DataType.Password)]
-        public string? Password { get; set; }
-    }
-}
