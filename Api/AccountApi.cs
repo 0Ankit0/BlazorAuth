@@ -39,19 +39,20 @@ public static class AccountApi
         }).DisableAntiforgery();
 
         endpoints.MapPost("/api/account/loginwith2fa", async (
-    [FromForm] TwoFactorLoginRequest model,
-    SignInManager<IdentityUser> signInManager,
-    UserManager<IdentityUser> userManager,
-    HttpContext httpContext) =>
-        {
-            var result = await signInManager.TwoFactorAuthenticatorSignInAsync(model.TwoFactorCode, model.RememberMe, model.RememberMachine);
-            if (result.Succeeded)
+        [FromForm] TwoFactorLoginRequest model,
+        SignInManager<IdentityUser> signInManager,
+        UserManager<IdentityUser> userManager,
+        HttpContext httpContext) =>
             {
-                return Results.Redirect(model?.ReturnUrl ?? "/");
-            }
-            return Results.Redirect("/account/login?error=Invalid");
+                var result = await signInManager.TwoFactorAuthenticatorSignInAsync(model.TwoFactorCode, model.RememberMe, model.RememberMachine);
+                if (result.Succeeded)
+                {
+                    return Results.Redirect(model?.ReturnUrl ?? "/");
+                }
+                return Results.Redirect("/account/login?error=Invalid");
 
-        }).DisableAntiforgery();
+            }).DisableAntiforgery();
+
         endpoints.MapGet("/account/externalLoginLink", async (
             HttpContext httpContext,
             SignInManager<IdentityUser> signInManager,
@@ -125,46 +126,39 @@ public static class AccountApi
                 return Results.Redirect($"/account/login?error={Uri.EscapeDataString("You have been logged out. Please login to proceed.")}");
             });
 
-        //endpoints.MapPost("/api/account/logout", async (
-        //SignInManager<IdentityUser> signInManager,
-        //HttpContext context) =>
-        //    {
-        //        await signInManager.SignOutAsync();
-        //        return Results.Ok(new { message = "You have been logged out." });
-        //    }).RequireAuthorization();
-
         endpoints.MapPost("/api/account/is2famachineremembered", async (
-      [FromBody] IdentityUser user,
-      UserManager<IdentityUser> userManager,
-      SignInManager<IdentityUser> signInManager) =>
-        {
-            if (user == null)
-                return Results.NotFound();
+          [FromBody] IdentityUser user,
+          UserManager<IdentityUser> userManager,
+          SignInManager<IdentityUser> signInManager) =>
+            {
+                if (user == null)
+                    return Results.NotFound();
 
-            var isRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user);
-            return Results.Ok(new MachineRememberedResponse { isRemembered = isRemembered });
-        });
+                var isRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user);
+                return Results.Ok(new MachineRememberedResponse { isRemembered = isRemembered });
+            });
+
         endpoints.MapPost("/api/account/loginwithrecoverycode", async (
-    [FromForm] RecoveryCodeLoginRequest model,
-    SignInManager<IdentityUser> signInManager,
-    UserManager<IdentityUser> userManager,
-    HttpContext httpContext) =>
-        {
-            var result = await signInManager.TwoFactorRecoveryCodeSignInAsync(model.RecoveryCode);
-            if (result.Succeeded)
+        [FromForm] RecoveryCodeLoginRequest model,
+        SignInManager<IdentityUser> signInManager,
+        UserManager<IdentityUser> userManager,
+        HttpContext httpContext) =>
             {
-                return Results.Redirect(model?.ReturnUrl ?? "/");
-            }
-            else if (result.IsLockedOut)
-            {
-                return Results.Redirect("/account/lockout");
-            }
-            else
-            {
-                // Redirect back with error message
-                return Results.Redirect($"/account/loginwithrecoverycode?message={Uri.EscapeDataString("Invalid recovery code entered.")}");
-            }
-        }).DisableAntiforgery();
+                var result = await signInManager.TwoFactorRecoveryCodeSignInAsync(model.RecoveryCode);
+                if (result.Succeeded)
+                {
+                    return Results.Redirect(model?.ReturnUrl ?? "/");
+                }
+                else if (result.IsLockedOut)
+                {
+                    return Results.Redirect("/account/lockout");
+                }
+                else
+                {
+                    // Redirect back with error message
+                    return Results.Redirect($"/account/loginwithrecoverycode?message={Uri.EscapeDataString("Invalid recovery code entered.")}");
+                }
+            }).DisableAntiforgery();
 
         return endpoints;
     }
