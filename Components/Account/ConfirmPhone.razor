@@ -17,9 +17,8 @@
 }  
 
 @code {  
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;  
-    [Parameter]  
-    [SupplyParameterFromQuery]  
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;   
+    [Parameter,SupplyParameterFromQuery]  
     public string PhoneNo { get; set; } = string.Empty;  
     private string code = string.Empty;  
     private string? statusMessage;  
