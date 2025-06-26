@@ -44,7 +44,7 @@
             return;  
         }  
 
-       var result = await userManager.ChangePhoneNumberAsync(identityUser, PhoneNo, Code);
+        var result = await UserManager.ChangePhoneNumberAsync(identityUser, PhoneNo, code);
 
         if (result.Succeeded)  
         {  
