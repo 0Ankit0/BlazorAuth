@@ -38,16 +38,12 @@
                 you
                 with a unique code. Enter the code in the confirmation box below.
             </p>
-            <EditForm Model="inputModel" OnValidSubmit="OnSubmitAsync">
+            <EditForm Model="enableAuthenticatorInputModel" OnValidSubmit="OnSubmitAsync">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
-                <div class="form-floating mb-3">
-                    <InputText @bind-Value="inputModel.Code" class="form-control" autocomplete="off"
-                        placeholder="Please enter the code." />
-                    <label class="form-label">Verification Code</label>
-                    <ValidationMessage For="@(() => inputModel.Code)" />
-                </div>
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Verify</button>
+                <InputText @bind-Value="enableAuthenticatorInputModel.Code" class="form-control mb-2"
+                    placeholder="Authenticator code" />
+                <button class="btn btn-primary" type="submit">Verify</button>
             </EditForm>
         </li>
     </ol>

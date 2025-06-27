@@ -2,20 +2,20 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.JSInterop;
 using System;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account
 {
     public partial class EnableLockout : ComponentBase
     {
         [Parameter] public IdentityUser? User { get; set; }
-        private InputModel inputModel = new();
         private string? statusMessage;
         private bool requirePassword;
         private bool showPasswordInput = false;
+        private PasswordInputModel inputModel = new();
 
         [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
         [Inject] private NavigationManager NavigationManager { get; set; } = default!;
@@ -73,13 +73,6 @@ namespace BlazorAuth.Components.Account
             {
                 statusMessage = "Unexpected error occurred enabling lockout: " + string.Join(" ", result.Errors.Select(e => e.Description));
             }
-        }
-
-        public class InputModel
-        {
-            [Required(ErrorMessage = "Password is required.")]
-            [DataType(DataType.Password)]
-            public string? Password { get; set; }
         }
     }
 }

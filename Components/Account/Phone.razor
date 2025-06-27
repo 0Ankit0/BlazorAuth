@@ -5,7 +5,7 @@
 {
     <div class="row">
         <div class="col-md-12">
-            <EditForm Model="inputModel" OnValidSubmit="HandleChangePhone">
+            <EditForm Model="phoneInputModel" OnValidSubmit="HandleChangePhone">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -31,10 +31,10 @@
                 @if (showChangePhone)
                 {
                     <div class="form-floating mb-3">
-                        <InputText @bind-Value="inputModel.NewPhone" class="form-control" autocomplete="tel"
+                        <InputText @bind-Value="phoneInputModel.NewPhone" class="form-control" autocomplete="tel"
                             aria-required="true" placeholder="Please enter new phone number." />
                         <label class="form-label">New phone number</label>
-                        <ValidationMessage For="@(() => inputModel.NewPhone)" />
+                        <ValidationMessage For="@(() => phoneInputModel.NewPhone)" />
                     </div>
                     <button type="submit" class="btn btn-lg btn-primary">Change phone</button>
                 }

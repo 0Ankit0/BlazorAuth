@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account;
 
@@ -69,9 +70,5 @@ public partial class TwoFactorAuthentication : ComponentBase
     {
         showResetAuthenticatorModal = false;
         NavigationManager.NavigateTo("/account/resetauthenticator");
-    }
-    public class MachineRememberedResponse
-    {
-        public bool isRemembered { get; set; }
     }
 }

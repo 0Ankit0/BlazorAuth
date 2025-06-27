@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.WebUtilities;
-using System.ComponentModel.DataAnnotations;
+using BlazorAuth.Models;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,13 +17,6 @@ namespace BlazorAuth.Components.Account
         [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
         [Inject] private IEmailSender EmailSender { get; set; } = default!;
         [Inject] private NavigationManager NavigationManager { get; set; } = default!;
-
-        public class InputModel
-        {
-            [Required]
-            [EmailAddress]
-            public string Email { get; set; } = string.Empty;
-        }
 
         private async Task HandleResend()
         {

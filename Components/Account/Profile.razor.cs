@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account
 {
@@ -12,7 +13,7 @@ namespace BlazorAuth.Components.Account
         private string? statusMessage;
         private bool isLoaded = false;
         private bool showChangeUsername = false;
-        private InputModel inputModel = new();
+        private ProfileInputModel profileInputModel = new();
 
         [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
         [Inject] private SignInManager<IdentityUser> SignInManager { get; set; } = default!;
@@ -33,7 +34,7 @@ namespace BlazorAuth.Components.Account
                 return;
             }
             currentUsername = await UserManager.GetUserNameAsync(User) ?? "";
-            inputModel.NewUsername = currentUsername;
+            profileInputModel.NewUsername = currentUsername;
             isLoaded = true;
         }
 
@@ -47,9 +48,15 @@ namespace BlazorAuth.Components.Account
             }
 
             var username = await UserManager.GetUserNameAsync(User);
-            if (inputModel.NewUsername != username)
+            if (string.IsNullOrWhiteSpace(profileInputModel.NewUsername))
             {
-                var setUsernameResult = await UserManager.SetUserNameAsync(User, inputModel.NewUsername);
+                statusMessage = "Username cannot be empty.";
+                return;
+            }
+
+            if (profileInputModel.NewUsername != username)
+            {
+                var setUsernameResult = await UserManager.SetUserNameAsync(User, profileInputModel.NewUsername);
                 if (!setUsernameResult.Succeeded)
                 {
                     statusMessage = "Unexpected error when trying to set username.";
@@ -64,13 +71,6 @@ namespace BlazorAuth.Components.Account
             }
             showChangeUsername = false;
             await LoadAsync();
-        }
-
-        public class InputModel
-        {
-            [Required]
-            [Display(Name = "New username")]
-            public string NewUsername { get; set; } = string.Empty;
         }
     }
 }

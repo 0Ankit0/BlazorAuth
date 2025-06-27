@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account;
 
@@ -10,7 +11,6 @@ public partial class RoleCreate : ComponentBase
     [Inject] private RoleManager<IdentityRole> RoleManager { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Parameter] public string? RoleId { get; set; }
-    private RoleModel roleModel = new();
     private string? statusMessage;
     private bool IsEditMode => !string.IsNullOrEmpty(RoleId);
     private IdentityRole? loadedRole;
@@ -18,6 +18,7 @@ public partial class RoleCreate : ComponentBase
     private ClaimModel newClaim = new();
     private bool showAdvancedOptions = false;
     private void ToggleAdvancedOptions() => showAdvancedOptions = !showAdvancedOptions;
+    private RoleModel roleModel = new();
     protected override async Task OnInitializedAsync()
     {
         if (IsEditMode)
@@ -28,7 +29,6 @@ public partial class RoleCreate : ComponentBase
                 statusMessage = "Role not found.";
                 return;
             }
-            roleModel.Name = loadedRole.Name ?? string.Empty;
             await LoadClaimsAsync();
         }
     }
@@ -67,11 +67,6 @@ public partial class RoleCreate : ComponentBase
     }
     private async Task HandleSubmit()
     {
-        if (string.IsNullOrWhiteSpace(roleModel.Name))
-        {
-            statusMessage = "Role name cannot be empty.";
-            return;
-        }
         if (IsEditMode)
         {
             if (loadedRole == null)
@@ -116,17 +111,5 @@ public partial class RoleCreate : ComponentBase
                 statusMessage = string.Join("; ", result.Errors.Select(e => e.Description));
             }
         }
-    }
-    public class RoleModel
-    {
-        [Required]
-        public string Name { get; set; } = string.Empty;
-    }
-    public class ClaimModel
-    {
-        [Required]
-        public string Type { get; set; } = string.Empty;
-        [Required]
-        public string Value { get; set; } = string.Empty;
     }
 }

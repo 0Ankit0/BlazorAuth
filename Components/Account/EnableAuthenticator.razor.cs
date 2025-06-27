@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account
 {
@@ -19,7 +20,7 @@ namespace BlazorAuth.Components.Account
         private string? authenticatorUri;
         private string? statusMessage;
         private bool isLoaded = false;
-        private InputModel inputModel = new();
+        private EnableAuthenticatorInputModel enableAuthenticatorInputModel = new();
         private string[]? recoveryCodes;
         private bool showRecoveryCodes = false;
 
@@ -118,13 +119,13 @@ namespace BlazorAuth.Components.Account
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(inputModel.Code))
+            if (string.IsNullOrWhiteSpace(enableAuthenticatorInputModel.Code))
             {
                 statusMessage = "Verification code is required.";
                 return;
             }
 
-            var verificationCode = inputModel.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
+            var verificationCode = enableAuthenticatorInputModel.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
 
             var is2faTokenValid = await UserManager.VerifyTwoFactorTokenAsync(
                 user, UserManager.Options.Tokens.AuthenticatorTokenProvider, verificationCode);
@@ -157,15 +158,6 @@ namespace BlazorAuth.Components.Account
         private void NavigateBack()
         {
             JS.InvokeVoidAsync("history.back");
-        }
-
-        public class InputModel
-        {
-            [Required]
-            [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
-            [DataType(DataType.Text)]
-            [Display(Name = "Verification Code")]
-            public string? Code { get; set; }
         }
     }
 }

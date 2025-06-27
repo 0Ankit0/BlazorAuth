@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account
 {
@@ -14,7 +15,7 @@ namespace BlazorAuth.Components.Account
         private string? statusMessage;
         private bool isLoaded = false;
         private bool showChangePhone = false;
-        private InputModel inputModel = new();
+        private PhoneInputModel phoneInputModel = new();
 
         [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
         [Inject] private NavigationManager NavigationManager { get; set; } = default!;
@@ -34,7 +35,7 @@ namespace BlazorAuth.Components.Account
                 return;
             }
             currentPhone = await UserManager.GetPhoneNumberAsync(User) ?? "";
-            inputModel.NewPhone = currentPhone;
+            phoneInputModel.NewPhone = currentPhone;
             isPhoneConfirmed = await UserManager.IsPhoneNumberConfirmedAsync(User);
             isLoaded = true;
         }
@@ -49,15 +50,15 @@ namespace BlazorAuth.Components.Account
             }
 
             var phone = await UserManager.GetPhoneNumberAsync(User);
-            if (inputModel.NewPhone != phone)
+            if (phoneInputModel.NewPhone != phone)
             {
                 var userId = await UserManager.GetUserIdAsync(User);
-                var code = await UserManager.GenerateChangePhoneNumberTokenAsync(User, inputModel.NewPhone);
-                await smsSender.SendSmsAsync(inputModel.NewPhone, $"Your confirmation code is: {code}");
+                var code = await UserManager.GenerateChangePhoneNumberTokenAsync(User, phoneInputModel.NewPhone);
+                await smsSender.SendSmsAsync(phoneInputModel.NewPhone, $"Your confirmation code is: {code}");
 
                 statusMessage = "Verification code sent to new phone number. Please check your SMS.";
                 await Task.Delay(500);
-                NavigationManager.NavigateTo($"/account/confirmphone?phoneNo={Uri.EscapeDataString(inputModel.NewPhone)}");
+                NavigationManager.NavigateTo($"/account/confirmphone?phoneNo={Uri.EscapeDataString(phoneInputModel.NewPhone)}");
             }
             else
             {
@@ -83,14 +84,6 @@ namespace BlazorAuth.Components.Account
             statusMessage = "Verification code sent. Please check your SMS.";
             await Task.Delay(500);
             NavigationManager.NavigateTo($"/account/confirmphone?phoneNo={Uri.EscapeDataString(phone)}");
-        }
-
-        public class InputModel
-        {
-            [Required]
-            [Phone]
-            [Display(Name = "New phone number")]
-            public string NewPhone { get; set; } = string.Empty;
         }
     }
 }

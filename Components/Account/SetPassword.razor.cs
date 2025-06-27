@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account;
 
@@ -65,14 +66,5 @@ public partial class SetPassword : ComponentBase
         {
             statusMessage = string.Join(" ", result.Errors.Select(e => e.Description));
         }
-    }
-    public class SetPasswordModel
-    {
-        [Required]
-        [MinLength(6)]
-        public string? NewPassword { get; set; }
-        [Required]
-        [Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
-        public string? ConfirmPassword { get; set; }
     }
 }

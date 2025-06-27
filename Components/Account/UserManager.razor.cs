@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
+using BlazorAuth.Models;
 
 namespace BlazorAuth.Components.Account;
 
@@ -151,12 +152,5 @@ public partial class UserManager : ComponentBase
         {
             statusMessage = string.Join("; ", result.Errors.Select(e => e.Description));
         }
-    }
-    public class ClaimModel
-    {
-        [Required]
-        public string Type { get; set; } = string.Empty;
-        [Required]
-        public string Value { get; set; } = string.Empty;
     }
 }
