@@ -1,8 +1,9 @@
+using BlazorAuth.Models;
 using BlazorAuth.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
+// using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -169,23 +170,3 @@ public static class AccountApi
         return endpoints;
     }
 }
-
-public class LoginRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
-public class RecoveryCodeLoginRequest
-{
-    public string RecoveryCode { get; set; } = string.Empty;
-    public string? ReturnUrl { get; set; }
-}
-public class RequestLockoutCodeRequest
-{
-    public string Email { get; set; } = string.Empty;
-}
-public class MachineRememberedResponse
-{
-    public bool isRemembered { get; set; }
-}
-public class RemoveLockoutRequest { public string? Code { get; set; } }
