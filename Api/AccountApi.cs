@@ -1,9 +1,9 @@
-using LMS.Models;
+using BlazorAuth.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LMS.Api
+namespace BlazorAuth.Api
 {
     public static class AccountApi
     {
