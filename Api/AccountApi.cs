@@ -12,7 +12,7 @@ namespace BlazorAuth.Api
             endpoints.MapPost("/api/account/login", async (
                 [FromForm] LoginRequest loginRequest,
                 [FromServices] SignInManager<IdentityUser> signInManager,
-                [FromServices] HttpContext context) =>
+                 HttpContext context) =>
             {
                 var result = await signInManager.PasswordSignInAsync(loginRequest.Email, loginRequest.Password, false, false);
                 if (result.Succeeded)
@@ -41,7 +41,7 @@ namespace BlazorAuth.Api
                 [FromForm] TwoFactorLoginRequest model,
                 [FromServices] SignInManager<IdentityUser> signInManager,
                 [FromServices] UserManager<IdentityUser> userManager,
-                [FromServices] HttpContext httpContext) =>
+                HttpContext httpContext) =>
             {
                 var result = await signInManager.TwoFactorAuthenticatorSignInAsync(model.TwoFactorCode, model.RememberMe, model.RememberMachine);
                 if (result.Succeeded)
@@ -53,7 +53,7 @@ namespace BlazorAuth.Api
             }).DisableAntiforgery();
 
             endpoints.MapGet("/account/externalLoginLink", async (
-                [FromServices] HttpContext httpContext,
+                 HttpContext httpContext,
                 [FromServices] SignInManager<IdentityUser> signInManager,
                 [FromServices] UserManager<IdentityUser> userManager,
                 [FromQuery] string provider,
@@ -72,7 +72,7 @@ namespace BlazorAuth.Api
             });
 
             endpoints.MapGet("/account/externalLoginLink/callback", async (
-                [FromServices] HttpContext httpContext,
+                 HttpContext httpContext,
                 [FromServices] SignInManager<IdentityUser> signInManager,
                 [FromServices] UserManager<IdentityUser> userManager,
                 [FromQuery] string returnUrl) =>
@@ -103,7 +103,7 @@ namespace BlazorAuth.Api
             });
 
             endpoints.MapGet("/api/account/refreshsignin", async (
-                [FromServices] HttpContext context,
+                HttpContext context,
                 [FromServices] UserManager<IdentityUser> userManager,
                 [FromServices] SignInManager<IdentityUser> signInManager) =>
             {
@@ -119,7 +119,7 @@ namespace BlazorAuth.Api
 
             endpoints.MapGet("/api/account/logout", async (
                 [FromServices] SignInManager<IdentityUser> signInManager,
-                [FromServices] HttpContext context) =>
+                HttpContext context) =>
             {
                 await signInManager.SignOutAsync();
                 return Results.Redirect($"/account/login?error={Uri.EscapeDataString("You have been logged out. Please login to proceed.")}");
@@ -149,7 +149,7 @@ namespace BlazorAuth.Api
                 [FromForm] RecoveryCodeLoginRequest model,
                 [FromServices] SignInManager<IdentityUser> signInManager,
                 [FromServices] UserManager<IdentityUser> userManager,
-                [FromServices] HttpContext httpContext) =>
+                HttpContext httpContext) =>
             {
                 var result = await signInManager.TwoFactorRecoveryCodeSignInAsync(model.RecoveryCode);
                 if (result.Succeeded)

@@ -10,6 +10,8 @@
     <link href="@Assets["lib/bootstrap-icons/font/bootstrap-icons.min.css"]" rel="stylesheet" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["BlazorAuth.styles.css"]" />
+    @* If you use this project as template then replace
+    BlazorAuth with your project name(Namespace of web project). *@
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet @rendermode="InteractiveServer" />
@@ -17,13 +19,13 @@
 
 <body>
     <CascadingAuthenticationState>
-    <Routes @rendermode="InteractiveServer" />
+        <Routes @rendermode="InteractiveServer" />
 
     </CascadingAuthenticationState>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     @* <script href="@Assets["lib/qrcodejs/qrcode.min.js"]" ></script> *@
     <script src="@Assets["js/site.js"]"></script>
-    <script  src="@Assets["lib/bootstrap/dist/js/bootstrap.bundle.js"]" ></script>
+    <script src="@Assets["lib/bootstrap/dist/js/bootstrap.bundle.js"]"></script>
     @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoA6DQD1P1L1QnYg2ZlK6Y5qD1R6V0w8AV2Xp6K9l+0U5b+" crossorigin="anonymous"></script> *@
     <script src="_framework/blazor.web.js"></script>
 </body>
